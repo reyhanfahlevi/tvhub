@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tvhub — Apple TV Management</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      // Automatically exported tokens from DESIGN.md via @google/design.md
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#0071e3",
+              "primary-hover": "#0077ed",
+              background: "#0b0c10",
+              surface: "#181922",
+              "surface-glass": "#181922b8",
+              border: "#ffffff1f",
+              "border-highlight": "#ffffff47",
+              "text-primary": "#f5f5f7",
+              "text-secondary": "#a1a1a6",
+              "text-muted": "#6e6e73",
+              success: "#30d158",
+              warning: "#ff9f0a",
+              danger: "#ff453a"
+            },
+            fontFamily: {
+              sans: ["Outfit", "-apple-system", "sans-serif"],
+            },
+            borderRadius: {
+              sm: "8px",
+              md: "14px",
+              lg: "20px",
+              xl: "28px",
+              full: "9999px"
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      :root {
+        --color-primary: #0071e3;
+        --color-background: #0b0c10;
+        --color-surface: #181922;
+        --color-surface-glass: rgba(24, 25, 34, 0.72);
+        --color-border: rgba(255, 255, 255, 0.12);
+        --color-border-highlight: rgba(255, 255, 255, 0.28);
+      }
+      body {
+        background-color: var(--color-background);
+        color: #f5f5f7;
+        font-family: 'Outfit', -apple-system, sans-serif;
+      }
+      .glass-panel {
+        background: var(--color-surface-glass);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border: 1px solid var(--color-border);
+      }
+      .glass-panel-highlight {
+        border-top: 1px solid var(--color-border-highlight);
+      }
+    </style>
+  </head>
+  <body class="min-h-screen bg-[#0b0c10] text-zinc-100 antialiased selection:bg-blue-600 selection:text-white">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
