@@ -390,6 +390,70 @@ export default function App() {
     }
   };
 
+  const handleAutoDetect = async () => {
+    setPrayerLoading(true);
+    try {
+      const res = await fetch('/api/widgets/prayer/detect');
+      const data = await res.json();
+      if (res.ok && data.location) {
+        setPrayerCity('auto');
+        setPrayerPreview(data.data);
+        showToast(`Lokasi terdeteksi: ${data.location.name}`);
+      } else {
+        showToast('Gagal mendeteksi lokasi');
+      }
+    } catch (err: any) {
+      showToast(`Error: ${err.message}`);
+    } finally {
+      setPrayerLoading(false);
+    }
+  };
+
+  const handleBrowserGps = () => {
+    if (!navigator.geolocation) {
+      showToast('Browser tidak mendukung Geolocation GPS');
+      return;
+    }
+    setPrayerLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          const target = selectedId === 'all' ? 'all' : (selectedId || devices[0]?.id);
+          const url = target === 'all' ? '/api/broadcast/widgets/prayer' : `/api/devices/${target}/widgets/prayer`;
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              enabled: prayerEnabled,
+              coords: {
+                name: 'Lokasi GPS (Akurat)',
+                latitude: lat,
+                longitude: lon,
+                timezone: 'Asia/Jakarta'
+              }
+            })
+          });
+          const data = await res.json();
+          if (res.ok && data.data) {
+            setPrayerPreview(data.data);
+            showToast(`Widget sholat diperbarui dari GPS (${lat.toFixed(2)}, ${lon.toFixed(2)})!`);
+          }
+        } catch (err: any) {
+          showToast(`Error GPS: ${err.message}`);
+        } finally {
+          setPrayerLoading(false);
+        }
+      },
+      (err) => {
+        setPrayerLoading(false);
+        showToast(`GPS izin ditolak: ${err.message}`);
+      },
+      { timeout: 10000 }
+    );
+  };
+
   const activeDevice = devices.find(d => d.id === selectedId) || devices[0];
   const target = selectedId === 'all' ? (devices[0]?.id || '') : (selectedId || devices[0]?.id || '');
   const dockOpacityValue = config.dock_opacity ?? 50;
@@ -881,38 +945,63 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="sm:col-span-6 p-3.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-1">
-                  <label className="text-[10px] font-semibold text-[#6e6e73] flex items-center gap-1">
-                    <MapPin className="w-3 h-3 text-emerald-600" />
-                    <span>Lokasi Wilayah / Kota</span>
-                  </label>
-                  <select
-                    value={prayerCity}
-                    onChange={(e) => setPrayerCity(e.target.value)}
-                    className="w-full bg-white border border-[#d2d2d7] text-xs font-semibold text-[#1d1d1f] rounded-xl px-3 py-1.5 focus:outline-none focus:border-emerald-500 transition"
-                  >
-                    {Object.entries(citiesList).length > 0 ? (
-                      Object.entries(citiesList).map(([key, val]) => (
-                        <option key={key} value={key}>
-                          {val.name}
-                        </option>
-                      ))
-                    ) : (
-                      <>
-                        <option value="jakarta">Jakarta (WIB)</option>
-                        <option value="bandung">Bandung (WIB)</option>
-                        <option value="surabaya">Surabaya (WIB)</option>
-                        <option value="semarang">Semarang (WIB)</option>
-                        <option value="yogyakarta">Yogyakarta (WIB)</option>
-                        <option value="medan">Medan (WIB)</option>
-                        <option value="palembang">Palembang (WIB)</option>
-                        <option value="makassar">Makassar (WITA)</option>
-                        <option value="denpasar">Denpasar / Bali (WITA)</option>
-                        <option value="balikpapan">Balikpapan (WITA)</option>
-                        <option value="jayapura">Jayapura (WIT)</option>
-                      </>
-                    )}
-                  </select>
+                <div className="sm:col-span-6 p-3.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-semibold text-[#6e6e73] flex items-center gap-1">
+                      <MapPin className="w-3 h-3 text-emerald-600" />
+                      <span>Lokasi Wilayah / Kota</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleAutoDetect}
+                      disabled={prayerLoading}
+                      className="text-[10px] text-emerald-600 hover:text-emerald-700 font-bold flex items-center gap-1 cursor-pointer transition hover:underline"
+                      title="Deteksi lokasi otomatis via IP Geolocation"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      <span>Auto-Detect IP</span>
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={prayerCity}
+                      onChange={(e) => setPrayerCity(e.target.value)}
+                      className="flex-1 bg-white border border-[#d2d2d7] text-xs font-semibold text-[#1d1d1f] rounded-xl px-3 py-1.5 focus:outline-none focus:border-emerald-500 transition"
+                    >
+                      <option value="auto">✨ Auto-Detect (IP Geolocation)</option>
+                      {Object.entries(citiesList).length > 0 ? (
+                        Object.entries(citiesList).map(([key, val]) => (
+                          <option key={key} value={key}>
+                            {val.name}
+                          </option>
+                        ))
+                      ) : (
+                        <>
+                          <option value="jakarta">Jakarta (WIB)</option>
+                          <option value="bandung">Bandung (WIB)</option>
+                          <option value="surabaya">Surabaya (WIB)</option>
+                          <option value="semarang">Semarang (WIB)</option>
+                          <option value="yogyakarta">Yogyakarta (WIB)</option>
+                          <option value="medan">Medan (WIB)</option>
+                          <option value="palembang">Palembang (WIB)</option>
+                          <option value="makassar">Makassar (WITA)</option>
+                          <option value="denpasar">Denpasar / Bali (WITA)</option>
+                          <option value="balikpapan">Balikpapan (WITA)</option>
+                          <option value="jayapura">Jayapura (WIT)</option>
+                        </>
+                      )}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={handleBrowserGps}
+                      disabled={prayerLoading}
+                      className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-emerald-50 border border-[#d2d2d7] hover:border-emerald-300 text-emerald-700 text-[10px] font-bold transition flex items-center gap-1 shadow-2xs"
+                      title="Gunakan koordinat GPS akurat dari browser"
+                    >
+                      <Compass className="w-3.5 h-3.5" />
+                      <span>GPS</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 

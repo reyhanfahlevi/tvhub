@@ -4,7 +4,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { DeviceDiscovery } from './discovery.js';
-import { calculatePrayerTimes, INDONESIAN_CITIES } from './prayer.js';
+import { calculatePrayerTimes, INDONESIAN_CITIES, detectLocationFromIP } from './prayer.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -251,9 +251,35 @@ app.get('/api/widgets/prayer/cities', (_req, res) => {
   res.json({ cities: INDONESIAN_CITIES });
 });
 
-// Widget: Calculate prayer times for city
-app.get('/api/widgets/prayer', (req, res) => {
+// Widget: Auto-detect location via IP
+app.get('/api/widgets/prayer/detect', async (_req, res) => {
+  try {
+    const loc = await detectLocationFromIP();
+    const data = calculatePrayerTimes(loc);
+    res.json({ location: loc, data });
+  } catch (err: any) {
+    res.status(500).json({ error: `Detection failed: ${err.message}` });
+  }
+});
+
+// Widget: Calculate prayer times for city or auto
+app.get('/api/widgets/prayer', async (req, res) => {
   const city = (req.query.city as string) || 'jakarta';
+  const lat = parseFloat(req.query.lat as string);
+  const lon = parseFloat(req.query.lon as string);
+
+  if (!isNaN(lat) && !isNaN(lon)) {
+    const name = (req.query.name as string) || 'Custom';
+    const data = calculatePrayerTimes({ name, latitude: lat, longitude: lon, timezone: 'Asia/Jakarta' });
+    return res.json({ data });
+  }
+
+  if (city === 'auto') {
+    const loc = await detectLocationFromIP();
+    const data = calculatePrayerTimes(loc);
+    return res.json({ data, location: loc });
+  }
+
   const data = calculatePrayerTimes(city);
   res.json({ data });
 });
@@ -264,7 +290,17 @@ app.post('/api/devices/:id/widgets/prayer', async (req, res) => {
   const ip = getTargetIp(targetId);
   const enabled = req.body?.enabled ?? true;
   const city = req.body?.city || 'jakarta';
-  const data = calculatePrayerTimes(city);
+  const coords = req.body?.coords;
+
+  let data;
+  if (coords && typeof coords.latitude === 'number' && typeof coords.longitude === 'number') {
+    data = calculatePrayerTimes(coords);
+  } else if (city === 'auto') {
+    const loc = await detectLocationFromIP();
+    data = calculatePrayerTimes(loc);
+  } else {
+    data = calculatePrayerTimes(city);
+  }
 
   const payload = {
     widget_prayer: {
@@ -299,7 +335,18 @@ app.post('/api/devices/:id/widgets/prayer', async (req, res) => {
 app.post('/api/broadcast/widgets/prayer', async (req, res) => {
   const enabled = req.body?.enabled ?? true;
   const city = req.body?.city || 'jakarta';
-  const data = calculatePrayerTimes(city);
+  const coords = req.body?.coords;
+
+  let data;
+  if (coords && typeof coords.latitude === 'number' && typeof coords.longitude === 'number') {
+    data = calculatePrayerTimes(coords);
+  } else if (city === 'auto') {
+    const loc = await detectLocationFromIP();
+    data = calculatePrayerTimes(loc);
+  } else {
+    data = calculatePrayerTimes(city);
+  }
+
   const devices = discovery.getDevices();
   const payload = {
     widget_prayer: {

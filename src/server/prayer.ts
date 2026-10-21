@@ -50,8 +50,51 @@ const PRAYER_NAMES_ID: Record<string, string> = {
   none: 'Subuh',
 };
 
-export function calculatePrayerTimes(cityKey = 'jakarta', targetDate = new Date()): PrayerTimesData {
-  const city = INDONESIAN_CITIES[cityKey.toLowerCase()] || INDONESIAN_CITIES['jakarta'];
+let cachedAutoLocation: CityCoords | null = null;
+let lastAutoCheck = 0;
+
+export async function detectLocationFromIP(): Promise<CityCoords> {
+  const now = Date.now();
+  if (cachedAutoLocation && now - lastAutoCheck < 3600000) {
+    return cachedAutoLocation;
+  }
+  try {
+    const res = await fetch('http://ip-api.com/json/', { signal: AbortSignal.timeout(4000) });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.status === 'success' && typeof data.lat === 'number' && typeof data.lon === 'number') {
+        const cityDisplay = data.city || data.regionName || 'Auto';
+        cachedAutoLocation = {
+          name: `${cityDisplay} (Auto)`,
+          latitude: data.lat,
+          longitude: data.lon,
+          timezone: data.timezone || 'Asia/Jakarta',
+        };
+        lastAutoCheck = now;
+        return cachedAutoLocation;
+      }
+    }
+  } catch (err) {
+    console.error('IP Geolocation error:', err);
+  }
+  return INDONESIAN_CITIES['jakarta'];
+}
+
+export function calculatePrayerTimes(
+  location: string | CityCoords = 'jakarta',
+  targetDate = new Date()
+): PrayerTimesData {
+  let city: CityCoords;
+  let cityKey: string;
+
+  if (typeof location === 'object' && location !== null && 'latitude' in location) {
+    city = location;
+    cityKey = 'custom';
+  } else {
+    cityKey = (location || 'jakarta').toLowerCase();
+    city = INDONESIAN_CITIES[cityKey] || INDONESIAN_CITIES['jakarta'];
+  }
+
   const coordinates = new Coordinates(city.latitude, city.longitude);
   
   // Southeast Asia / Kemenag RI parameter: Fajr 20°, Isha 18°
@@ -125,7 +168,8 @@ export function calculatePrayerTimes(cityKey = 'jakarta', targetDate = new Date(
   }
 
   const title = `🕌 ${nextPrayerNameId} ${nextPrayerTimeStr}`;
-  const subtitle = `(${countdownText}) • ${city.name.split(' ')[0]}`;
+  const cityDisplay = city.name.replace(/ \(Auto\)/g, '').replace(/ \((WIB|WITA|WIT)\)/g, '').split(' / ')[0];
+  const subtitle = `(${countdownText}) • ${cityDisplay}`;
 
   return {
     cityKey,
