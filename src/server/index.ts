@@ -14,6 +14,16 @@ const upload = multer({ storage: multer.memoryStorage() });
 app.use(cors());
 app.use(express.json());
 
+// Serve CleanYourTV APK for direct download & sideloading
+const APK_PATH = path.resolve('/Volumes/Work/project/cleanyourtv/launcher/app/build/outputs/apk/release/app-release.apk');
+app.get(['/download/cleanyourtv.apk', '/apk'], (_req, res) => {
+  if (fs.existsSync(APK_PATH)) {
+    res.download(APK_PATH, 'cleanyourtv.apk');
+  } else {
+    res.status(404).json({ error: 'APK build not found. Please compile the launcher first.' });
+  }
+});
+
 // List all discovered TVs
 app.get('/api/devices', (_req, res) => {
   res.json({ devices: discovery.getDevices() });
