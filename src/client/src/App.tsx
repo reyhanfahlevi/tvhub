@@ -63,6 +63,7 @@ interface TVConfig {
   dock_opacity?: number;
   greeting_name?: string;
   show_stats?: boolean;
+  columns?: number;
   dock_apps?: string[];
   [key: string]: any;
 }
@@ -80,6 +81,7 @@ export default function App() {
     wallpaper_rotation_minutes: 30,
     greeting_name: '',
     show_stats: true,
+    columns: 4,
   });
   const [apps, setApps] = useState<any[]>([]);
   const [wallpapers, setWallpapers] = useState<WallpaperItem[]>([]);
@@ -609,6 +611,33 @@ export default function App() {
                   <span>30% (Standard)</span>
                   <span>60% (Deep Contrast)</span>
                 </div>
+              </div>
+
+              {/* Dock Columns / Slots Selector */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs font-semibold">
+                  <span className="text-[#1d1d1f]">Jumlah Ikon di Dock (Slots)</span>
+                  <span className="text-[#0071e3] font-mono text-sm px-2.5 py-0.5 rounded-lg bg-[#0071e3]/10 border border-[#0071e3]/20 font-bold">
+                    {config.columns ?? 4} Ikon
+                  </span>
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  {[4, 5, 6, 7].map((num) => (
+                    <button
+                      key={num}
+                      type="button"
+                      onClick={() => setConfig({ ...config, columns: num })}
+                      className={`py-2 rounded-xl text-xs font-semibold transition-all border ${
+                        (config.columns ?? 4) === num
+                          ? 'bg-[#0071e3] text-white border-[#0071e3] shadow-sm'
+                          : 'bg-[#f5f5f7] hover:bg-[#eaeaed] text-[#1d1d1f] border-[#e5e5ea]'
+                      }`}
+                    >
+                      {num} Ikon
+                    </button>
+                  ))}
+                </div>
+                <div className="text-[11px] text-[#86868b]">Kunci jumlah slot ikon dock agar tidak pernah berubah/reset.</div>
               </div>
 
               {/* Visual Toggles Grid */}

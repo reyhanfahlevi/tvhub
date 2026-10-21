@@ -6,7 +6,7 @@ import fs from 'fs';
 import { DeviceDiscovery } from './discovery.js';
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT) || 3000;
 const discovery = new DeviceDiscovery();
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -209,13 +209,14 @@ app.delete('/api/devices/:id/wallpapers/:name', async (req, res) => {
 
 // Upload wallpaper to a specific TV
 app.post('/api/devices/:id/wallpaper', upload.single('wallpaper'), async (req, res) => {
-  const ip = getTargetIp(req.params.id);
+  const targetId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const ip = getTargetIp(targetId);
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });
   }
 
   try {
-    const blob = new Blob([req.file.buffer], { type: req.file.mimetype });
+    const blob = new Blob([new Uint8Array(req.file.buffer)], { type: req.file.mimetype });
     const formData = new FormData();
     formData.append('file', blob, req.file.originalname);
 
@@ -241,7 +242,7 @@ app.post('/api/broadcast/wallpaper', upload.single('wallpaper'), async (req, res
 
   for (const dev of devices) {
     try {
-      const blob = new Blob([req.file.buffer], { type: req.file.mimetype });
+      const blob = new Blob([new Uint8Array(req.file.buffer)], { type: req.file.mimetype });
       const formData = new FormData();
       formData.append('file', blob, req.file.originalname);
 

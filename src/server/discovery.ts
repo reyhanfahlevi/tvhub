@@ -24,6 +24,7 @@ export interface TVDevice {
 
 export class DeviceDiscovery {
   private devices: Map<string, TVDevice> = new Map();
+  private knownIps: Map<string, string> = new Map();
   private bonjour: Bonjour | null = null;
   private isScanning = false;
 
@@ -45,6 +46,22 @@ export class DeviceDiscovery {
       if (dev.id === idOrIp || dev.ip === idOrIp) {
         return dev;
       }
+    }
+    // Fallback: check known IPs map
+    if (this.knownIps.has(idOrIp)) {
+      const ip = this.knownIps.get(idOrIp)!;
+      return {
+        id: idOrIp,
+        ip,
+        port: 8080,
+        model: idOrIp,
+        device: '',
+        manufacturer: '',
+        androidVersion: '',
+        sdk: 0,
+        wallpapersCount: 0,
+        lastSeen: Date.now(),
+      };
     }
     return undefined;
   }
@@ -82,9 +99,10 @@ export class DeviceDiscovery {
 
     await Promise.all(promises);
 
-    // Prune any devices that failed to respond during this scan
+    // Prune any devices that failed to respond and have been offline
+    const now = Date.now();
     for (const [id, dev] of this.devices.entries()) {
-      if (!activeIps.has(dev.ip)) {
+      if (!activeIps.has(dev.ip) && (now - dev.lastSeen > 60000)) {
         console.log(`[Scanner] Pruning unreachable TV: ${dev.model} (${dev.ip})`);
         this.devices.delete(id);
       }
@@ -98,7 +116,7 @@ export class DeviceDiscovery {
   public async probeDevice(ip: string, port = 8080): Promise<boolean> {
     try {
       const res = await fetch(`http://${ip}:${port}/api/status`, {
-        signal: AbortSignal.timeout(700),
+        signal: AbortSignal.timeout(2000),
       });
       if (!res.ok) return false;
       const data = await res.json();
@@ -119,6 +137,7 @@ export class DeviceDiscovery {
         };
         const isNew = !this.devices.has(device.id);
         this.devices.set(device.id, device);
+        this.knownIps.set(device.id, device.ip);
         if (isNew) {
           console.log(`[Discovery] Registered TV: ${device.model} (${device.ip})`);
         }
@@ -131,15 +150,21 @@ export class DeviceDiscovery {
   }
 
   private async refreshStatus() {
+    const now = Date.now();
     for (const [id, dev] of this.devices.entries()) {
       try {
         const ok = await this.probeDevice(dev.ip, dev.port);
         if (!ok) {
-          console.log(`[Discovery] TV ${dev.model} (${dev.ip}) unreachable. Pruning.`);
-          this.devices.delete(id);
+          // Only prune if device has been continuously unreachable for over 90 seconds
+          if (now - dev.lastSeen > 90000) {
+            console.log(`[Discovery] TV ${dev.model} (${dev.ip}) offline for >90s. Pruning.`);
+            this.devices.delete(id);
+          }
         }
       } catch {
-        this.devices.delete(id);
+        if (now - dev.lastSeen > 90000) {
+          this.devices.delete(id);
+        }
       }
     }
   }
