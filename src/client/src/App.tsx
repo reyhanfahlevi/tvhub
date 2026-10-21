@@ -24,7 +24,12 @@ import {
   Moon,
   Sparkles,
   MapPin,
-  Calendar
+  Calendar,
+  LayoutGrid,
+  PanelTop,
+  AlignLeft,
+  AlignRight,
+  AlignCenter
 } from 'lucide-react';
 
 interface WallpaperItem {
@@ -93,7 +98,9 @@ export default function App() {
   const [previewModalImg, setPreviewModalImg] = useState<{ name: string; url: string } | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [uploading, setUploading] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<'launcher' | 'widgets'>('launcher');
   const [prayerEnabled, setPrayerEnabled] = useState<boolean>(true);
+  const [prayerPosition, setPrayerPosition] = useState<'header_left' | 'header_right' | 'above_dock'>('header_left');
   const [prayerCity, setPrayerCity] = useState<string>('jakarta');
   const [citiesList, setCitiesList] = useState<Record<string, { name: string; timezone: string }>>({});
   const [prayerPreview, setPrayerPreview] = useState<any>(null);
@@ -164,6 +171,9 @@ export default function App() {
             setPrayerEnabled(cfg.widget_prayer.enabled ?? true);
             if (cfg.widget_prayer.city_key) {
               setPrayerCity(cfg.widget_prayer.city_key);
+            }
+            if (cfg.widget_prayer.position) {
+              setPrayerPosition(cfg.widget_prayer.position);
             }
           }
         }
@@ -364,8 +374,9 @@ export default function App() {
     }
   };
 
-  const handleApplyPrayerWidget = async (overrideEnabled?: boolean) => {
+  const handleApplyPrayerWidget = async (overrideEnabled?: boolean, overridePosition?: 'header_left' | 'header_right' | 'above_dock') => {
     const isEn = overrideEnabled !== undefined ? overrideEnabled : prayerEnabled;
+    const pos = overridePosition !== undefined ? overridePosition : prayerPosition;
     const target = selectedId === 'all' ? 'all' : (selectedId || devices[0]?.id);
     if (!target) return;
     setPrayerLoading(true);
@@ -374,11 +385,11 @@ export default function App() {
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled: isEn, city: prayerCity }),
+        body: JSON.stringify({ enabled: isEn, position: pos, city: prayerCity }),
       });
       const data = await res.json();
       if (res.ok) {
-        showToast(isEn ? `Widget Jadwal Sholat (${prayerCity}) aktif di TV!` : 'Widget Sholat dinonaktifkan di TV');
+        showToast(isEn ? `Widget Jadwal Sholat (${pos.replace('_', ' ')}) aktif di TV!` : 'Widget Sholat dinonaktifkan di TV');
         if (data.data) setPrayerPreview(data.data);
       } else {
         showToast(`Gagal set widget: ${data.error || res.statusText}`);
@@ -482,10 +493,37 @@ export default function App() {
           <div>
             <div className="flex items-center gap-2">
               <span className="text-base font-bold tracking-tight text-[#1d1d1f]">tvhub</span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#f0f0f2] border border-[#e5e5ea] text-[#6e6e73]">Studio Edition</span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#f0f0f2] border border-[#e5e5ea] text-[#6e6e73]">CleanYourTV</span>
             </div>
-            <div className="text-[11px] text-[#6e6e73]">Apple TV Management & Control Console</div>
+            <div className="text-[11px] text-[#6e6e73]">Pusat kendali ringan untuk Android TV</div>
           </div>
+        </div>
+
+        {/* Navigation Tabs */}
+        <div className="hidden md:flex items-center gap-1 p-1 rounded-2xl bg-[#eaeaed] border border-[#e5e5ea]">
+          <button
+            onClick={() => setActiveTab('launcher')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
+              activeTab === 'launcher'
+                ? 'bg-white text-[#1d1d1f] shadow-xs'
+                : 'text-[#6e6e73] hover:text-[#1d1d1f]'
+            }`}
+          >
+            <Sliders className="w-3.5 h-3.5" />
+            <span>Launcher</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('widgets')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
+              activeTab === 'widgets'
+                ? 'bg-white text-emerald-700 shadow-xs'
+                : 'text-[#6e6e73] hover:text-[#1d1d1f]'
+            }`}
+          >
+            <Moon className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Widgets</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          </button>
         </div>
 
         {/* TV Device Selector */}
@@ -581,8 +619,8 @@ export default function App() {
                         RAM {activeDevice?.memory?.available_mb || 600} MB free • Storage {((activeDevice?.storage?.free_mb || 23000) / 1024).toFixed(1)} GB free
                       </div>
                     )}
-                    {/* Realtime Prayer Widget Preview Pill */}
-                    {prayerEnabled && prayerPreview && (
+                    {/* Realtime Prayer Widget Preview Pill (Header Left) */}
+                    {prayerEnabled && prayerPreview && prayerPosition === 'header_left' && (
                       <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 mt-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-[9px] font-medium text-white shadow-xs">
                         <span>{prayerPreview.title}</span>
                         <span className="text-white/70 font-light">• {prayerPreview.countdownText}</span>
@@ -590,6 +628,13 @@ export default function App() {
                     )}
                   </div>
                   <div className="flex items-center gap-1.5">
+                    {/* Realtime Prayer Widget Preview Pill (Header Right) */}
+                    {prayerEnabled && prayerPreview && prayerPosition === 'header_right' && (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/25 backdrop-blur-md border border-emerald-400/40 text-[9px] font-semibold text-emerald-200">
+                        <span>{prayerPreview.title}</span>
+                        <span className="text-white/70 font-light">• {prayerPreview.countdownText}</span>
+                      </span>
+                    )}
                     <span className="px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md text-[10px] font-medium border border-white/10 text-white">Inputs</span>
                     <span className="px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md text-[10px] font-medium border border-white/10 text-white">Wi-Fi</span>
                     <span className="px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md text-[10px] font-medium border border-white/10 text-white">Settings</span>
@@ -598,6 +643,15 @@ export default function App() {
 
                 {/* Simulated Dock with REALTIME Opacity & Glass Reflection */}
                 <div className="relative z-10 flex flex-col items-center">
+                  {/* Realtime Prayer Widget Preview Pill (Above Dock) */}
+                  {prayerEnabled && prayerPreview && prayerPosition === 'above_dock' && (
+                    <div className="self-center mb-2 inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-[10px] font-semibold text-white shadow-md">
+                      <span>{prayerPreview.title}</span>
+                      <span className="text-white/70 font-normal">• {prayerPreview.countdownText}</span>
+                      <span className="text-white/50 text-[9px]">• {prayerPreview.cityName}</span>
+                    </div>
+                  )}
+
                   <div className="text-xs font-semibold text-white/90 mb-2 self-start drop-shadow">
                     Netflix
                   </div>
@@ -705,9 +759,10 @@ export default function App() {
           </div>
         </div>
 
-        {/* 2-Column Studio Workbench */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* LEFT: Dock & Display Calibration Studio (7 cols) */}
+        {/* 2-Column Studio Workbench or Widget Studio Tab */}
+        {activeTab === 'launcher' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            {/* LEFT: Dock & Display Calibration Studio (7 cols) */}
           <div className="lg:col-span-7 space-y-6">
             {/* Dock Calibration Panel */}
             <div className="apple-card rounded-3xl p-6 md:p-8 space-y-6">
@@ -717,8 +772,8 @@ export default function App() {
                     <Sliders className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-[#1d1d1f]">Dock & Glassmorphism Studio</h3>
-                    <p className="text-[11px] text-[#6e6e73]">Atur transparansi kaca & visual launcher di TV</p>
+                    <h3 className="text-sm font-bold text-[#1d1d1f]">Pengaturan Tampilan & Dock</h3>
+                    <p className="text-[11px] text-[#6e6e73]">Atur transparansi dock, jumlah ikon & dimming di TV</p>
                   </div>
                 </div>
                 <span className="text-xs font-mono px-2.5 py-1 rounded-full bg-[#f0f0f2] text-[#1d1d1f] border border-[#e5e5ea]">
@@ -744,7 +799,7 @@ export default function App() {
                 />
                 <div className="flex justify-between text-[11px] text-[#86868b]">
                   <span>0% (Bening Transparan)</span>
-                  <span className="text-[#0071e3] font-semibold">50% (Apple TV Glass)</span>
+                  <span className="text-[#0071e3] font-semibold">50% (Glass Blur)</span>
                   <span>100% (Solid Pekat)</span>
                 </div>
               </div>
@@ -902,188 +957,6 @@ export default function App() {
               </button>
             </div>
 
-            {/* Widget Studio (Prayer Times & Extensibility) */}
-            <div className="apple-card rounded-3xl p-6 md:p-8 space-y-6">
-              <div className="flex items-center justify-between pb-4 border-b border-[#e5e5ea]">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-                    <Moon className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-[#1d1d1f]">Widget Studio (Live TV Overlays)</h3>
-                    <p className="text-[11px] text-[#6e6e73]">Widget jadwal sholat dinamis & modul launcher TV</p>
-                  </div>
-                </div>
-                <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Kemenag Calibrated
-                </span>
-              </div>
-
-              {/* Widget Toggle & City Selector */}
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-                <div
-                  onClick={() => {
-                    const nextVal = !prayerEnabled;
-                    setPrayerEnabled(nextVal);
-                    handleApplyPrayerWidget(nextVal);
-                  }}
-                  className={`sm:col-span-6 p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
-                    prayerEnabled
-                      ? 'bg-emerald-500/10 border-emerald-500/30 text-[#1d1d1f]'
-                      : 'bg-[#f5f5f7] border-[#e5e5ea] text-[#6e6e73] hover:bg-[#eaeaed]'
-                  }`}
-                >
-                  <div>
-                    <div className="font-bold text-xs text-[#1d1d1f]">Widget Jadwal Sholat</div>
-                    <div className="text-[11px] text-[#6e6e73] mt-0.5">Tampil di header launcher TV</div>
-                  </div>
-                  <div className={`w-6 h-6 rounded-full border flex items-center justify-center transition-all ${
-                    prayerEnabled ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-[#d2d2d7] bg-white'
-                  }`}>
-                    {prayerEnabled && <Check className="w-3.5 h-3.5 stroke-[3]" />}
-                  </div>
-                </div>
-
-                <div className="sm:col-span-6 p-3.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[10px] font-semibold text-[#6e6e73] flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-emerald-600" />
-                      <span>Lokasi Wilayah / Kota</span>
-                    </label>
-                    <button
-                      type="button"
-                      onClick={handleAutoDetect}
-                      disabled={prayerLoading}
-                      className="text-[10px] text-emerald-600 hover:text-emerald-700 font-bold flex items-center gap-1 cursor-pointer transition hover:underline"
-                      title="Deteksi lokasi otomatis via IP Geolocation"
-                    >
-                      <Sparkles className="w-3 h-3" />
-                      <span>Auto-Detect IP</span>
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={prayerCity}
-                      onChange={(e) => setPrayerCity(e.target.value)}
-                      className="flex-1 bg-white border border-[#d2d2d7] text-xs font-semibold text-[#1d1d1f] rounded-xl px-3 py-1.5 focus:outline-none focus:border-emerald-500 transition"
-                    >
-                      <option value="auto">✨ Auto-Detect (IP Geolocation)</option>
-                      {Object.entries(citiesList).length > 0 ? (
-                        Object.entries(citiesList).map(([key, val]) => (
-                          <option key={key} value={key}>
-                            {val.name}
-                          </option>
-                        ))
-                      ) : (
-                        <>
-                          <option value="jakarta">Jakarta (WIB)</option>
-                          <option value="bandung">Bandung (WIB)</option>
-                          <option value="surabaya">Surabaya (WIB)</option>
-                          <option value="semarang">Semarang (WIB)</option>
-                          <option value="yogyakarta">Yogyakarta (WIB)</option>
-                          <option value="medan">Medan (WIB)</option>
-                          <option value="palembang">Palembang (WIB)</option>
-                          <option value="makassar">Makassar (WITA)</option>
-                          <option value="denpasar">Denpasar / Bali (WITA)</option>
-                          <option value="balikpapan">Balikpapan (WITA)</option>
-                          <option value="jayapura">Jayapura (WIT)</option>
-                        </>
-                      )}
-                    </select>
-                    <button
-                      type="button"
-                      onClick={handleBrowserGps}
-                      disabled={prayerLoading}
-                      className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-emerald-50 border border-[#d2d2d7] hover:border-emerald-300 text-emerald-700 text-[10px] font-bold transition flex items-center gap-1 shadow-2xs"
-                      title="Gunakan koordinat GPS akurat dari browser"
-                    >
-                      <Compass className="w-3.5 h-3.5" />
-                      <span>GPS</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* TV Live Capsule Simulation Preview */}
-              {prayerPreview && (
-                <div className="p-4 rounded-2xl bg-[#1c1c1e] text-white space-y-3 border border-white/10 shadow-inner">
-                  <div className="flex items-center justify-between text-[10px] uppercase font-mono tracking-wider text-white/50">
-                    <span className="flex items-center gap-1">
-                      <Sparkles className="w-3 h-3 text-emerald-400" />
-                      TV Header Capsule Preview
-                    </span>
-                    <span>Waktu Setempat</span>
-                  </div>
-
-                  {/* The Glass Capsule */}
-                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-xs font-medium text-white shadow-sm">
-                    <span className="font-semibold">{prayerPreview.title}</span>
-                    <span className="text-white/70 font-light">• {prayerPreview.countdownText}</span>
-                    <span className="text-white/50 text-[10px]">• {prayerPreview.cityName}</span>
-                  </div>
-
-                  {/* 5 Daily Prayers Schedule Grid */}
-                  <div className="grid grid-cols-5 gap-1.5 pt-1">
-                    {[
-                      { key: 'fajr', name: 'Subuh', time: prayerPreview.fajr },
-                      { key: 'dhuhr', name: 'Dzuhur', time: prayerPreview.dhuhr },
-                      { key: 'asr', name: 'Ashar', time: prayerPreview.asr },
-                      { key: 'maghrib', name: 'Maghrib', time: prayerPreview.maghrib },
-                      { key: 'isha', name: 'Isya', time: prayerPreview.isha },
-                    ].map((p) => {
-                      const isNext = prayerPreview.nextPrayer === p.key;
-                      return (
-                        <div
-                          key={p.key}
-                          className={`p-2 rounded-xl text-center border transition-all ${
-                            isNext
-                              ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 font-bold'
-                              : 'bg-white/5 border-white/5 text-white/70 font-medium'
-                          }`}
-                        >
-                          <div className="text-[9px] uppercase tracking-wider">{p.name}</div>
-                          <div className="text-xs font-mono mt-0.5">{p.time}</div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Action Button: Apply Prayer Widget */}
-              <button
-                type="button"
-                onClick={() => handleApplyPrayerWidget()}
-                disabled={prayerLoading}
-                className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] disabled:opacity-50 text-white font-bold text-xs tracking-wide shadow-md transition-all flex items-center justify-center gap-2"
-              >
-                {prayerLoading ? (
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Check className="w-4 h-4 stroke-[3]" />
-                )}
-                <span>
-                  {selectedId === 'all'
-                    ? 'Broadcast Widget Sholat ke Semua TV'
-                    : `Terapkan Jadwal Sholat (${prayerPreview?.cityName || prayerCity}) ke TV`}
-                </span>
-              </button>
-
-              {/* Custom Module Card Extensibility Note */}
-              <div className="p-3.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex items-start gap-3">
-                <div className="p-1.5 rounded-lg bg-[#0071e3]/10 text-[#0071e3] mt-0.5">
-                  <Layers className="w-3.5 h-3.5" />
-                </div>
-                <div className="text-[11px] text-[#6e6e73] leading-relaxed">
-                  <span className="font-semibold text-[#1d1d1f]">Dukungan Custom Widget & Module Card (Spec 1):</span>
-                  <br />
-                  Selain widget live dari TVHub, CleanYourTV mendukung APK pihak ketiga untuk menyematkan kartu interaktif native di dock launcher via category{' '}
-                  <code className="text-[10px] font-mono text-[#0071e3] bg-[#0071e3]/10 px-1 py-0.5 rounded">com.gathin.tvhome.category.DOCK_CARD</code>.
-                </div>
-              </div>
-            </div>
-
             {/* Wallpaper Showcase & Dropzone */}
             <div className="apple-card rounded-3xl p-6 md:p-8 space-y-5">
               <div className="flex items-center justify-between pb-3 border-b border-[#e5e5ea]">
@@ -1223,14 +1096,14 @@ export default function App() {
             </div>
           </div>
 
-          {/* RIGHT: Real Apple Silver Siri Remote & Quick Launch (5 cols) */}
+          {/* RIGHT: Remote & Quick Launch (5 cols) */}
           <div className="lg:col-span-5 space-y-6">
-            {/* Apple Silver Siri Remote */}
+            {/* TV Remote Controller */}
             <div className="apple-card rounded-3xl p-8 flex flex-col items-center relative">
               <div className="w-full flex items-center justify-between pb-4 border-b border-[#e5e5ea] mb-6">
                 <div>
-                  <h3 className="text-sm font-bold text-[#1d1d1f]">Apple Siri Remote</h3>
-                  <p className="text-[11px] text-[#6e6e73]">Brushed Silver Aluminium Remote</p>
+                  <h3 className="text-sm font-bold text-[#1d1d1f]">TV Remote Controller</h3>
+                  <p className="text-[11px] text-[#6e6e73]">Navigasi D-Pad & shortcut langsung ke TV</p>
                 </div>
                 <span className="text-xs font-mono px-2.5 py-1 rounded-full bg-[#f0f0f2] text-[#1d1d1f] border border-[#e5e5ea] font-medium">
                   {selectedId === 'all' ? 'Broadcast All' : activeDevice?.model}
@@ -1311,7 +1184,7 @@ export default function App() {
 
                 {/* Remote Bottom Mark */}
                 <div className="mt-8 text-[10px] font-mono tracking-widest uppercase text-[#86868b] font-medium">
-                  APPLE TV REMOTE
+                  CLEANYOURTV REMOTE
                 </div>
               </div>
             </div>
@@ -1343,6 +1216,335 @@ export default function App() {
             )}
           </div>
         </div>
+        ) : (
+          /* Dedicated Widgets Page */
+          <div className="space-y-6 animate-fade-in">
+            {/* 1. Placement Selector: Pilihan Posisi Widget di TV */}
+            <div className="apple-card rounded-3xl p-6 md:p-8 space-y-5">
+              <div className="flex items-center justify-between pb-3 border-b border-[#e5e5ea]">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-[#0071e3]/10 text-[#0071e3] border border-[#0071e3]/20">
+                    <PanelTop className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-[#1d1d1f]">Pilih Posisi Widget di Layar TV</h3>
+                    <p className="text-[11px] text-[#6e6e73]">Tentukan letak widget pada tampilan launcher TV</p>
+                  </div>
+                </div>
+                <span className="text-xs font-mono text-[#0071e3] font-bold">
+                  {prayerPosition === 'header_left' ? 'Kiri Bawah Jam' : prayerPosition === 'header_right' ? 'Kanan Atas Status' : 'Tengah di Atas Dock'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Option A: header_left */}
+                <div
+                  onClick={() => setPrayerPosition('header_left')}
+                  className={`p-5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between ${
+                    prayerPosition === 'header_left'
+                      ? 'border-emerald-500 bg-emerald-500/5 shadow-md ring-2 ring-emerald-500/20'
+                      : 'border-[#e5e5ea] bg-[#fbfbfd] hover:bg-[#f5f5f7]'
+                  }`}
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className={`p-2 rounded-xl ${prayerPosition === 'header_left' ? 'bg-emerald-500 text-white' : 'bg-[#eaeaed] text-[#6e6e73]'}`}>
+                        <AlignLeft className="w-4 h-4" />
+                      </div>
+                      {prayerPosition === 'header_left' && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white">
+                          Aktif Terpilih
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      <div className="font-bold text-sm text-[#1d1d1f]">Kiri Bawah Jam</div>
+                      <div className="text-[11px] text-[#6e6e73] mt-1 leading-relaxed">
+                        Tampil di bawah jam & memory stats. Bersih dan menyatu alami dengan header.
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-[#e5e5ea] text-[10px] font-mono text-[#86868b]">
+                    Posisi Default
+                  </div>
+                </div>
+
+                {/* Option B: header_right */}
+                <div
+                  onClick={() => setPrayerPosition('header_right')}
+                  className={`p-5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between ${
+                    prayerPosition === 'header_right'
+                      ? 'border-emerald-500 bg-emerald-500/5 shadow-md ring-2 ring-emerald-500/20'
+                      : 'border-[#e5e5ea] bg-[#fbfbfd] hover:bg-[#f5f5f7]'
+                  }`}
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className={`p-2 rounded-xl ${prayerPosition === 'header_right' ? 'bg-emerald-500 text-white' : 'bg-[#eaeaed] text-[#6e6e73]'}`}>
+                        <AlignRight className="w-4 h-4" />
+                      </div>
+                      {prayerPosition === 'header_right' && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white">
+                          Aktif Terpilih
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      <div className="font-bold text-sm text-[#1d1d1f]">Kanan Atas (Status Bar)</div>
+                      <div className="text-[11px] text-[#6e6e73] mt-1 leading-relaxed">
+                        Sejajar dengan tombol Inputs, Wi-Fi & Settings di pojok kanan atas layar.
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-[#e5e5ea] text-[10px] font-mono text-[#86868b]">
+                    Status Bar Pill
+                  </div>
+                </div>
+
+                {/* Option C: above_dock */}
+                <div
+                  onClick={() => setPrayerPosition('above_dock')}
+                  className={`p-5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between ${
+                    prayerPosition === 'above_dock'
+                      ? 'border-emerald-500 bg-emerald-500/5 shadow-md ring-2 ring-emerald-500/20'
+                      : 'border-[#e5e5ea] bg-[#fbfbfd] hover:bg-[#f5f5f7]'
+                  }`}
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className={`p-2 rounded-xl ${prayerPosition === 'above_dock' ? 'bg-emerald-500 text-white' : 'bg-[#eaeaed] text-[#6e6e73]'}`}>
+                        <AlignCenter className="w-4 h-4" />
+                      </div>
+                      {prayerPosition === 'above_dock' && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white">
+                          Aktif Terpilih
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      <div className="font-bold text-sm text-[#1d1d1f]">Tengah di Atas Dock</div>
+                      <div className="text-[11px] text-[#6e6e73] mt-1 leading-relaxed">
+                        Floating pill tepat di tengah atas barisan ikon aplikasi TV. Sangat jelas terlihat.
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-[#e5e5ea] text-[10px] font-mono text-[#86868b]">
+                    Floating Center Pill
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Jadwal Sholat Controller */}
+            <div className="apple-card rounded-3xl p-6 md:p-8 space-y-6">
+              <div className="flex items-center justify-between pb-4 border-b border-[#e5e5ea]">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                    <Moon className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-[#1d1d1f]">Widget Jadwal Sholat</h3>
+                    <p className="text-[11px] text-[#6e6e73]">Kalkulasi otomatis waktu sholat & hitung mundur ke waktu berikutnya</p>
+                  </div>
+                </div>
+                <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Kemenag RI Calibrated
+                </span>
+              </div>
+
+              {/* Controls Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
+                <div
+                  onClick={() => {
+                    const nextVal = !prayerEnabled;
+                    setPrayerEnabled(nextVal);
+                    handleApplyPrayerWidget(nextVal, prayerPosition);
+                  }}
+                  className={`sm:col-span-5 p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
+                    prayerEnabled
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-[#1d1d1f]'
+                      : 'bg-[#f5f5f7] border-[#e5e5ea] text-[#6e6e73] hover:bg-[#eaeaed]'
+                  }`}
+                >
+                  <div>
+                    <div className="font-bold text-xs text-[#1d1d1f]">Aktifkan Widget di TV</div>
+                    <div className="text-[11px] text-[#6e6e73] mt-0.5">Tampilkan pill sholat di layar launcher</div>
+                  </div>
+                  <div className={`w-6 h-6 rounded-full border flex items-center justify-center transition-all ${
+                    prayerEnabled ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-[#d2d2d7] bg-white'
+                  }`}>
+                    {prayerEnabled && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                  </div>
+                </div>
+
+                <div className="sm:col-span-7 p-3.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-semibold text-[#6e6e73] flex items-center gap-1">
+                      <MapPin className="w-3 h-3 text-emerald-600" />
+                      <span>Lokasi Wilayah / Kota</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleAutoDetect}
+                      disabled={prayerLoading}
+                      className="text-[10px] text-emerald-600 hover:text-emerald-700 font-bold flex items-center gap-1 cursor-pointer transition hover:underline"
+                      title="Deteksi lokasi otomatis via IP Geolocation"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      <span>Auto-Detect IP</span>
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={prayerCity}
+                      onChange={(e) => setPrayerCity(e.target.value)}
+                      className="flex-1 bg-white border border-[#d2d2d7] text-xs font-semibold text-[#1d1d1f] rounded-xl px-3 py-1.5 focus:outline-none focus:border-emerald-500 transition"
+                    >
+                      <option value="auto">✨ Auto-Detect (IP Geolocation)</option>
+                      {Object.entries(citiesList).length > 0 ? (
+                        Object.entries(citiesList).map(([key, val]) => (
+                          <option key={key} value={key}>
+                            {val.name}
+                          </option>
+                        ))
+                      ) : (
+                        <>
+                          <option value="jakarta">Jakarta (WIB)</option>
+                          <option value="bandung">Bandung (WIB)</option>
+                          <option value="surabaya">Surabaya (WIB)</option>
+                          <option value="semarang">Semarang (WIB)</option>
+                          <option value="yogyakarta">Yogyakarta (WIB)</option>
+                          <option value="medan">Medan (WIB)</option>
+                          <option value="palembang">Palembang (WIB)</option>
+                          <option value="makassar">Makassar (WITA)</option>
+                          <option value="denpasar">Denpasar / Bali (WITA)</option>
+                          <option value="balikpapan">Balikpapan (WITA)</option>
+                          <option value="jayapura">Jayapura (WIT)</option>
+                        </>
+                      )}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={handleBrowserGps}
+                      disabled={prayerLoading}
+                      className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-emerald-50 border border-[#d2d2d7] hover:border-emerald-300 text-emerald-700 text-[10px] font-bold transition flex items-center gap-1 shadow-2xs"
+                      title="Gunakan koordinat GPS akurat dari browser"
+                    >
+                      <Compass className="w-3.5 h-3.5" />
+                      <span>GPS</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* TV Live Capsule Simulation Preview */}
+              {prayerPreview && (
+                <div className="p-4 rounded-2xl bg-[#1c1c1e] text-white space-y-3 border border-white/10 shadow-inner">
+                  <div className="flex items-center justify-between text-[10px] uppercase font-mono tracking-wider text-white/50">
+                    <span className="flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-emerald-400" />
+                      Preview Tampilan Pill di TV
+                    </span>
+                    <span>Waktu Setempat</span>
+                  </div>
+
+                  {/* The Glass Capsule */}
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-xs font-medium text-white shadow-sm">
+                    <span className="font-semibold">{prayerPreview.title}</span>
+                    <span className="text-white/70 font-light">• {prayerPreview.countdownText}</span>
+                    <span className="text-white/50 text-[10px]">• {prayerPreview.cityName}</span>
+                  </div>
+
+                  {/* 5 Daily Prayers Schedule Grid */}
+                  <div className="grid grid-cols-5 gap-2 pt-1">
+                    {[
+                      { key: 'fajr', name: 'Subuh', time: prayerPreview.fajr },
+                      { key: 'dhuhr', name: 'Dzuhur', time: prayerPreview.dhuhr },
+                      { key: 'asr', name: 'Ashar', time: prayerPreview.asr },
+                      { key: 'maghrib', name: 'Maghrib', time: prayerPreview.maghrib },
+                      { key: 'isha', name: 'Isya', time: prayerPreview.isha },
+                    ].map((p) => {
+                      const isNext = prayerPreview.nextPrayer === p.key;
+                      return (
+                        <div
+                          key={p.key}
+                          className={`p-3 rounded-xl text-center border transition-all ${
+                            isNext
+                              ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 font-bold scale-[1.02]'
+                              : 'bg-white/5 border-white/5 text-white/70 font-medium'
+                          }`}
+                        >
+                          <div className="text-[10px] uppercase tracking-wider">{p.name}</div>
+                          <div className="text-sm font-mono mt-0.5">{p.time}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Button: Apply Prayer Widget */}
+              <button
+                type="button"
+                onClick={() => handleApplyPrayerWidget()}
+                disabled={prayerLoading}
+                className="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] disabled:opacity-50 text-white font-bold text-xs tracking-wide shadow-md transition-all flex items-center justify-center gap-2"
+              >
+                {prayerLoading ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Check className="w-4 h-4 stroke-[3]" />
+                )}
+                <span>
+                  {selectedId === 'all'
+                    ? `Broadcast Posisi (${prayerPosition.replace('_', ' ')}) & Widget ke Semua TV`
+                    : `Terapkan Posisi (${prayerPosition.replace('_', ' ')}) & Jadwal Sholat ke TV`}
+                </span>
+              </button>
+            </div>
+
+            {/* 3. Future Widgets & Module Card Extensibility */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Weather Widget Teaser */}
+              <div className="apple-card rounded-3xl p-6 space-y-3 opacity-90 border border-[#e5e5ea]">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600 border border-amber-500/20">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <h4 className="text-xs font-bold text-[#1d1d1f]">Weather Widget</h4>
+                  </div>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-semibold">
+                    Segera Hadir
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#6e6e73] leading-relaxed">
+                  Widget cuaca realtime, suhu harian, dan indeks kualitas udara (AQI) kota Anda langsung di header layar TV.
+                </p>
+              </div>
+
+              {/* 3rd-Party Module Card Spec 1 */}
+              <div className="apple-card rounded-3xl p-6 space-y-3 border border-[#e5e5ea]">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-xl bg-[#0071e3]/10 text-[#0071e3] border border-[#0071e3]/20">
+                      <Layers className="w-4 h-4" />
+                    </div>
+                    <h4 className="text-xs font-bold text-[#1d1d1f]">Dukungan Custom Module Card (Spec 1)</h4>
+                  </div>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-semibold">
+                    Native APK
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#6e6e73] leading-relaxed">
+                  Aplikasi pihak ketiga di Android TV dapat memasang card interaktif native di dock launcher CleanYourTV via category{' '}
+                  <code className="text-[10px] font-mono text-[#0071e3] bg-[#0071e3]/10 px-1 py-0.5 rounded">com.gathin.tvhome.category.DOCK_CARD</code>.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
 
       {/* Lightbox Image Preview Modal */}

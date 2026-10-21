@@ -289,6 +289,7 @@ app.post('/api/devices/:id/widgets/prayer', async (req, res) => {
   const targetId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const ip = getTargetIp(targetId);
   const enabled = req.body?.enabled ?? true;
+  const position = req.body?.position || 'header_left';
   const city = req.body?.city || 'jakarta';
   const coords = req.body?.coords;
 
@@ -305,6 +306,7 @@ app.post('/api/devices/:id/widgets/prayer', async (req, res) => {
   const payload = {
     widget_prayer: {
       enabled,
+      position,
       city: data.cityName,
       city_key: city,
       title: data.title,
@@ -334,6 +336,7 @@ app.post('/api/devices/:id/widgets/prayer', async (req, res) => {
 // Widget: Broadcast prayer widget to all TVs
 app.post('/api/broadcast/widgets/prayer', async (req, res) => {
   const enabled = req.body?.enabled ?? true;
+  const position = req.body?.position || 'header_left';
   const city = req.body?.city || 'jakarta';
   const coords = req.body?.coords;
 
@@ -351,6 +354,7 @@ app.post('/api/broadcast/widgets/prayer', async (req, res) => {
   const payload = {
     widget_prayer: {
       enabled,
+      position,
       city: data.cityName,
       city_key: city,
       title: data.title,
