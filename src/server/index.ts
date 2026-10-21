@@ -192,7 +192,8 @@ app.get('/api/devices/:id/wallpapers/:name/file', async (req, res) => {
 
 // Delete wallpaper on a specific TV
 app.delete('/api/devices/:id/wallpapers/:name', async (req, res) => {
-  const ip = getTargetIp(req.params.id);
+  const targetId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const ip = getTargetIp(targetId);
   const name = encodeURIComponent(req.params.name);
   try {
     const response = await fetch(`http://${ip}:8080/api/wallpaper?name=${name}`, {
@@ -205,6 +206,43 @@ app.delete('/api/devices/:id/wallpapers/:name', async (req, res) => {
   } catch (err: any) {
     res.status(502).json({ error: `Failed to delete wallpaper on ${ip}: ${err.message}` });
   }
+});
+
+// Set active wallpaper on a specific TV (or 'auto' for rotation)
+app.post('/api/devices/:id/wallpapers/active', async (req, res) => {
+  const targetId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const ip = getTargetIp(targetId);
+  const name = req.body?.name || req.query.name || '';
+  try {
+    const response = await fetch(`http://${ip}:8080/api/wallpaper/active?name=${encodeURIComponent(name)}`, {
+      method: 'POST',
+      signal: AbortSignal.timeout(4000),
+    });
+    const data = await response.json();
+    res.json(data);
+  } catch (err: any) {
+    res.status(502).json({ error: `Failed to set active wallpaper on ${ip}: ${err.message}` });
+  }
+});
+
+// Broadcast active wallpaper to all TVs
+app.post('/api/broadcast/wallpapers/active', async (req, res) => {
+  const devices = discovery.getDevices();
+  const name = req.body?.name || req.query.name || '';
+  const results: any[] = [];
+  for (const dev of devices) {
+    try {
+      const response = await fetch(`http://${dev.ip}:8080/api/wallpaper/active?name=${encodeURIComponent(name)}`, {
+        method: 'POST',
+        signal: AbortSignal.timeout(4000),
+      });
+      const data = await response.json();
+      results.push({ id: dev.id, ip: dev.ip, status: 'ok', data });
+    } catch (err: any) {
+      results.push({ id: dev.id, ip: dev.ip, status: 'error', error: err.message });
+    }
+  }
+  res.json({ results });
 });
 
 // Upload wallpaper to a specific TV

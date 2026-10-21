@@ -83,6 +83,7 @@ export default function App() {
   });
   const [apps, setApps] = useState<any[]>([]);
   const [wallpapers, setWallpapers] = useState<WallpaperItem[]>([]);
+  const [activeTvWallpaper, setActiveTvWallpaper] = useState<string>('auto');
   const [activeSimWallpaper, setActiveSimWallpaper] = useState<string | null>(null);
   const [previewModalImg, setPreviewModalImg] = useState<{ name: string; url: string } | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -143,6 +144,9 @@ export default function App() {
             typeof w === 'string' ? { name: w } : w
           );
           setWallpapers(list);
+          if (wpData.active_wallpaper) {
+            setActiveTvWallpaper(wpData.active_wallpaper);
+          }
         }
       } catch (err) {
         console.error('Failed to load device details', err);
@@ -233,6 +237,9 @@ export default function App() {
             typeof w === 'string' ? { name: w } : w
           );
           setWallpapers(list);
+          if (wpData.active_wallpaper) {
+            setActiveTvWallpaper(wpData.active_wallpaper);
+          }
         }
       }
       fetchDevices();
@@ -261,9 +268,34 @@ export default function App() {
           typeof w === 'string' ? { name: w } : w
         );
         setWallpapers(list);
+        if (wpData.active_wallpaper) {
+          setActiveTvWallpaper(wpData.active_wallpaper);
+        }
       }
     } catch (err: any) {
       showToast(`Gagal hapus wallpaper: ${err.message}`);
+    }
+  };
+
+  const handleSetActiveWallpaper = async (filename: string) => {
+    const target = selectedId === 'all' ? (devices[0]?.id || '') : selectedId;
+    if (!target) return;
+    try {
+      const res = await fetch(`/api/devices/${target}/wallpapers/active`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: filename }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setActiveTvWallpaper(data.active_wallpaper || filename);
+        setActiveSimWallpaper(filename === 'auto' ? null : filename);
+        showToast(filename === 'auto' ? 'Mode rotasi otomatis aktif di TV' : `Wallpaper '${filename}' aktif di TV!`);
+      } else {
+        showToast(`Gagal set wallpaper: ${data.error || res.statusText}`);
+      }
+    } catch (err: any) {
+      showToast(`Error: ${err.message}`);
     }
   };
 
@@ -400,8 +432,8 @@ export default function App() {
               <div 
                 className="w-full aspect-video rounded-2xl tv-mockup-frame relative overflow-hidden flex flex-col justify-between p-5 select-none transition-all duration-300"
                 style={{
-                  backgroundImage: (activeSimWallpaper || wallpapers[0]?.name) && target
-                    ? `url(/api/devices/${target}/wallpapers/${encodeURIComponent(activeSimWallpaper || wallpapers[0].name)}/file)`
+                  backgroundImage: (activeSimWallpaper || (activeTvWallpaper !== 'auto' ? activeTvWallpaper : wallpapers[0]?.name)) && target
+                    ? `url(/api/devices/${target}/wallpapers/${encodeURIComponent(activeSimWallpaper || (activeTvWallpaper !== 'auto' ? activeTvWallpaper : wallpapers[0]?.name))}/file)`
                     : 'none',
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
@@ -772,26 +804,49 @@ export default function App() {
                 <span className="text-[11px] text-[#6e6e73] mt-1">Format JPG, PNG, WEBP (Otomatis rotasi)</span>
               </label>
 
+              {/* Active TV Wallpaper State Banner */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${activeTvWallpaper === 'auto' ? 'bg-indigo-500 animate-pulse' : 'bg-emerald-500'}`} />
+                  <span className="text-xs font-semibold text-[#1d1d1f] shrink-0">Status di TV:</span>
+                  <span className="text-xs font-mono font-bold text-[#0071e3] px-2.5 py-0.5 rounded-lg bg-[#0071e3]/10 truncate" title={activeTvWallpaper}>
+                    {activeTvWallpaper === 'auto' ? '🔄 Rotasi Otomatis' : `🖼️ ${activeTvWallpaper}`}
+                  </span>
+                </div>
+                {activeTvWallpaper !== 'auto' && (
+                  <button
+                    type="button"
+                    onClick={() => handleSetActiveWallpaper('auto')}
+                    className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white hover:bg-[#eaeaed] text-[#1d1d1f] border border-[#e5e5ea] transition shadow-xs flex items-center justify-center gap-1.5 shrink-0"
+                  >
+                    <span>🔄 Mode Rotasi Otomatis</span>
+                  </button>
+                )}
+              </div>
+
               {wallpapers.length > 0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 pt-1">
                   {wallpapers.map((wp: any, idx: number) => {
                     const filename = typeof wp === 'string' ? wp : wp.name;
                     const sizeKb = wp.size_bytes ? (wp.size_bytes > 1048576 ? `${(wp.size_bytes / 1048576).toFixed(1)} MB` : `${Math.round(wp.size_bytes / 1024)} KB`) : null;
                     const fileUrl = `/api/devices/${target}/wallpapers/${encodeURIComponent(filename)}/file`;
-                    const isSimActive = (activeSimWallpaper || wallpapers[0]?.name) === filename;
+                    const isTvActive = activeTvWallpaper === filename;
 
                     return (
                       <div
                         key={idx}
                         className={`rounded-2xl border overflow-hidden bg-white flex flex-col group transition-all shadow-sm ${
-                          isSimActive ? 'ring-2 ring-[#0071e3] border-transparent' : 'border-[#e5e5ea] hover:border-[#b0b0b8]'
+                          isTvActive ? 'ring-2 ring-emerald-500 border-transparent shadow-md' : 'border-[#e5e5ea] hover:border-[#b0b0b8]'
                         }`}
                       >
                         {/* 16:9 Thumbnail Image */}
                         <div 
                           className="relative aspect-video w-full bg-[#f0f0f2] overflow-hidden cursor-pointer"
-                          onClick={() => setPreviewModalImg({ name: filename, url: fileUrl })}
-                          title="Klik untuk lihat ukuran penuh"
+                          onClick={() => {
+                            setActiveSimWallpaper(filename);
+                            setPreviewModalImg({ name: filename, url: fileUrl });
+                          }}
+                          title="Klik untuk lihat ukuran penuh & simulasi"
                         >
                           <img
                             src={fileUrl}
@@ -805,6 +860,12 @@ export default function App() {
                               <span>Lihat</span>
                             </span>
                           </div>
+                          {isTvActive && (
+                            <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-emerald-500 text-[10px] font-bold text-white shadow flex items-center gap-1">
+                              <Check className="w-3 h-3 stroke-[3]" />
+                              <span>Aktif di TV</span>
+                            </span>
+                          )}
                           {sizeKb && (
                             <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-[10px] font-mono text-white">
                               {sizeKb}
@@ -817,17 +878,23 @@ export default function App() {
                           <div className="min-w-0 flex-1">
                             <div className="text-[11px] font-mono text-[#1d1d1f] truncate font-medium" title={filename}>{filename}</div>
                           </div>
-                          <div className="flex items-center gap-1 shrink-0">
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {isTvActive ? (
+                              <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200">
+                                Sedang Dipakai
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleSetActiveWallpaper(filename)}
+                                className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-[#0071e3] hover:bg-[#0077ed] text-white transition shadow-xs"
+                                title="Pasang sebagai wallpaper aktif di TV sekarang"
+                              >
+                                Pasang di TV
+                              </button>
+                            )}
                             <button
-                              onClick={() => setActiveSimWallpaper(filename)}
-                              className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition ${
-                                isSimActive ? 'bg-[#0071e3] text-white shadow-xs' : 'bg-[#f0f0f2] hover:bg-[#e5e5ea] text-[#1d1d1f]'
-                              }`}
-                              title="Tampilkan di Simulasi Layar TV di atas"
-                            >
-                              {isSimActive ? 'Aktif' : 'Simul'}
-                            </button>
-                            <button
+                              type="button"
                               onClick={() => handleDeleteWallpaper(filename)}
                               className="p-1 rounded-lg text-[#86868b] hover:text-red-600 hover:bg-red-50 transition"
                               title="Hapus Wallpaper dari TV"
