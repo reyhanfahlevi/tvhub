@@ -224,13 +224,18 @@ export default function App() {
   const sendKey = async (key: string) => {
     const target = selectedId || (devices[0]?.id) || 'all';
     try {
-      await fetch(`/api/devices/${target}/key`, {
+      const res = await fetch(`/api/devices/${target}/key`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key }),
       });
+      if (res.ok) {
+        showToast(`Remote: ${key.toUpperCase()}`);
+      } else {
+        showToast(`Gagal kirim ${key}: ${res.statusText}`);
+      }
     } catch (err: any) {
-      console.error(err);
+      showToast(`Error koneksi: ${err.message}`);
     }
   };
 
