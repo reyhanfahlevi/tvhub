@@ -656,15 +656,15 @@ export default function App() {
                   {prayerEnabled && prayerPreview && (
                     prayerMode === 'full' ? (
                       <div className="self-center mb-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-[9px] font-medium text-white shadow-md">
-                        <span className={prayerPreview.nextPrayer === 'fajr' ? 'text-white font-bold' : 'text-white/60'}>Subuh {prayerPreview.fajr}</span>
+                        <span className={prayerPreview.nextPrayer === 'fajr' ? 'text-white font-bold' : 'text-white/60'}>Fajr {prayerPreview.fajr}</span>
                         <span className="text-white/30">|</span>
-                        <span className={prayerPreview.nextPrayer === 'dhuhr' ? 'text-white font-bold' : 'text-white/60'}>Dzuhur {prayerPreview.dhuhr}</span>
+                        <span className={prayerPreview.nextPrayer === 'dhuhr' ? 'text-white font-bold' : 'text-white/60'}>Dhuhr {prayerPreview.dhuhr}</span>
                         <span className="text-white/30">|</span>
-                        <span className={prayerPreview.nextPrayer === 'asr' ? 'text-white font-bold' : 'text-white/60'}>Ashar {prayerPreview.asr}</span>
+                        <span className={prayerPreview.nextPrayer === 'asr' ? 'text-white font-bold' : 'text-white/60'}>Asr {prayerPreview.asr}</span>
                         <span className="text-white/30">|</span>
                         <span className={prayerPreview.nextPrayer === 'maghrib' ? 'text-white font-bold' : 'text-white/60'}>Maghrib {prayerPreview.maghrib}</span>
                         <span className="text-white/30">|</span>
-                        <span className={prayerPreview.nextPrayer === 'isha' ? 'text-white font-bold' : 'text-white/60'}>Isya {prayerPreview.isha}</span>
+                        <span className={prayerPreview.nextPrayer === 'isha' ? 'text-white font-bold' : 'text-white/60'}>Isha {prayerPreview.isha}</span>
                         <span className="text-emerald-300 font-semibold">• 🕌 {prayerPreview.nextPrayerNameId} in {prayerPreview.countdownText}</span>
                       </div>
                     ) : (
@@ -1286,12 +1286,12 @@ export default function App() {
                     <div>
                       <div className="font-bold text-sm text-[#1d1d1f]">Full Daily Schedule (5 Prayers)</div>
                       <div className="text-[11px] text-[#6e6e73] mt-1 leading-relaxed">
-                        Displays all 5 prayer times simultaneously (Subuh, Dzuhur, Ashar, Maghrib, Isya) in a horizontal strip with upcoming prayer highlighted.
+                        Displays all 5 prayer times simultaneously (Fajr, Dhuhr, Asr, Maghrib, Isha) in a horizontal strip with upcoming prayer highlighted.
                       </div>
                     </div>
                   </div>
                   <div className="mt-4 pt-3 border-t border-[#e5e5ea] text-[10px] font-mono text-emerald-700 font-medium">
-                    Subuh • Dzuhur • Ashar • Maghrib • Isya
+                    Fajr • Dhuhr • Asr • Maghrib • Isha
                   </div>
                 </div>
 
@@ -1555,11 +1555,11 @@ export default function App() {
                   {/* 5 Daily Prayers Schedule Grid */}
                   <div className="grid grid-cols-5 gap-2 pt-1">
                     {[
-                      { key: 'fajr', name: 'Subuh', time: prayerPreview.fajr },
-                      { key: 'dhuhr', name: 'Dzuhur', time: prayerPreview.dhuhr },
-                      { key: 'asr', name: 'Ashar', time: prayerPreview.asr },
+                      { key: 'fajr', name: 'Fajr', time: prayerPreview.fajr },
+                      { key: 'dhuhr', name: 'Dhuhr', time: prayerPreview.dhuhr },
+                      { key: 'asr', name: 'Asr', time: prayerPreview.asr },
                       { key: 'maghrib', name: 'Maghrib', time: prayerPreview.maghrib },
-                      { key: 'isha', name: 'Isya', time: prayerPreview.isha },
+                      { key: 'isha', name: 'Isha', time: prayerPreview.isha },
                     ].map((p) => {
                       const isNext = prayerPreview.nextPrayer === p.key;
                       return (

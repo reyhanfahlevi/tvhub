@@ -40,14 +40,14 @@ export interface PrayerTimesData {
   subtitle: string;
 }
 
-const PRAYER_NAMES_ID: Record<string, string> = {
-  fajr: 'Subuh',
-  sunrise: 'Terbit',
-  dhuhr: 'Dzuhur',
-  asr: 'Ashar',
+const PRAYER_NAMES_EN: Record<string, string> = {
+  fajr: 'Fajr',
+  sunrise: 'Sunrise',
+  dhuhr: 'Dhuhr',
+  asr: 'Asr',
   maghrib: 'Maghrib',
-  isha: 'Isya',
-  none: 'Subuh',
+  isha: 'Isha',
+  none: 'Fajr',
 };
 
 let cachedAutoLocation: CityCoords | null = null;
@@ -122,7 +122,7 @@ export function calculatePrayerTimes(
   const next = pt.nextPrayer();
   const current = pt.currentPrayer();
   const nextPrayerKey = next === 'none' ? 'fajr' : next;
-  const nextPrayerNameId = PRAYER_NAMES_ID[nextPrayerKey] || 'Subuh';
+  const nextPrayerNameEn = PRAYER_NAMES_EN[nextPrayerKey] || 'Fajr';
 
   let nextTimeObj: Date;
   switch (nextPrayerKey) {
@@ -160,14 +160,14 @@ export function calculatePrayerTimes(
 
   let countdownText = '';
   if (diffMinutes < 60) {
-    countdownText = `${diffMinutes}m lagi`;
+    countdownText = `${diffMinutes}m left`;
   } else {
     const hours = Math.floor(diffMinutes / 60);
     const mins = diffMinutes % 60;
-    countdownText = mins > 0 ? `${hours}j ${mins}m lagi` : `${hours} jam lagi`;
+    countdownText = mins > 0 ? `${hours}h ${mins}m left` : `${hours}h left`;
   }
 
-  const title = `🕌 ${nextPrayerNameId} ${nextPrayerTimeStr}`;
+  const title = `🕌 ${nextPrayerNameEn} ${nextPrayerTimeStr}`;
   const cityDisplay = city.name.replace(/ \(Auto\)/g, '').replace(/ \((WIB|WITA|WIT)\)/g, '').split(' / ')[0];
   const subtitle = `(${countdownText}) • ${cityDisplay}`;
 
@@ -182,7 +182,7 @@ export function calculatePrayerTimes(
     isha: ishaStr,
     currentPrayer: current,
     nextPrayer: nextPrayerKey,
-    nextPrayerNameId,
+    nextPrayerNameId: nextPrayerNameEn,
     nextPrayerTime: nextPrayerTimeStr,
     minutesRemaining: diffMinutes,
     countdownText,
