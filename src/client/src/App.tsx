@@ -18,7 +18,9 @@ import {
   Sliders,
   Image as ImageIcon,
   CheckCircle2,
-  Trash2
+  Trash2,
+  Eye,
+  X
 } from 'lucide-react';
 
 interface WallpaperItem {
@@ -81,6 +83,8 @@ export default function App() {
   });
   const [apps, setApps] = useState<any[]>([]);
   const [wallpapers, setWallpapers] = useState<WallpaperItem[]>([]);
+  const [activeSimWallpaper, setActiveSimWallpaper] = useState<string | null>(null);
+  const [previewModalImg, setPreviewModalImg] = useState<{ name: string; url: string } | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [uploading, setUploading] = useState<boolean>(false);
 
@@ -395,9 +399,14 @@ export default function App() {
 
               {/* 16:9 TV Screen Frame */}
               <div 
-                className="w-full aspect-video rounded-2xl tv-mockup-frame relative overflow-hidden flex flex-col justify-between p-5 select-none"
+                className="w-full aspect-video rounded-2xl tv-mockup-frame relative overflow-hidden flex flex-col justify-between p-5 select-none transition-all duration-300"
                 style={{
-                  background: 'radial-gradient(ellipse at 70% 20%, #29385c 0%, #101524 55%, #080910 100%)',
+                  backgroundImage: (activeSimWallpaper || wallpapers[0]?.name) && target
+                    ? `url(/api/devices/${target}/wallpapers/${encodeURIComponent(activeSimWallpaper || wallpapers[0].name)}/file)`
+                    : 'none',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  backgroundColor: '#0c0d14',
                 }}
               >
                 {/* Wallpaper Darken Dim Overlay */}
@@ -738,31 +747,69 @@ export default function App() {
               </label>
 
               {wallpapers.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 pt-1">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 pt-1">
                   {wallpapers.map((wp: any, idx: number) => {
                     const filename = typeof wp === 'string' ? wp : wp.name;
-                    const sizeKb = wp.size_bytes ? Math.round(wp.size_bytes / 1024) : null;
+                    const sizeKb = wp.size_bytes ? (wp.size_bytes > 1048576 ? `${(wp.size_bytes / 1048576).toFixed(1)} MB` : `${Math.round(wp.size_bytes / 1024)} KB`) : null;
+                    const fileUrl = `/api/devices/${target}/wallpapers/${encodeURIComponent(filename)}/file`;
+                    const isSimActive = (activeSimWallpaper || wallpapers[0]?.name) === filename;
+
                     return (
                       <div
                         key={idx}
-                        className="p-3 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-between gap-2 group hover:border-[#d2d2d7] transition"
+                        className={`rounded-2xl border overflow-hidden bg-white flex flex-col group transition-all shadow-sm ${
+                          isSimActive ? 'ring-2 ring-[#0071e3] border-transparent' : 'border-[#e5e5ea] hover:border-[#b0b0b8]'
+                        }`}
                       >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="p-2 rounded-xl bg-white border border-[#e5e5ea] text-[#6e6e73] shrink-0">
-                            <ImageIcon className="w-4 h-4 text-pink-500" />
+                        {/* 16:9 Thumbnail Image */}
+                        <div 
+                          className="relative aspect-video w-full bg-[#f0f0f2] overflow-hidden cursor-pointer"
+                          onClick={() => setPreviewModalImg({ name: filename, url: fileUrl })}
+                          title="Klik untuk lihat ukuran penuh"
+                        >
+                          <img
+                            src={fileUrl}
+                            alt={filename}
+                            className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                            loading="lazy"
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition flex items-center justify-center opacity-0 group-hover:opacity-100">
+                            <span className="p-2 rounded-xl bg-white/95 backdrop-blur-md text-[#1d1d1f] shadow-lg flex items-center gap-1.5 text-xs font-semibold">
+                              <Eye className="w-3.5 h-3.5 text-[#0071e3]" />
+                              <span>Lihat</span>
+                            </span>
                           </div>
-                          <div className="min-w-0">
-                            <div className="text-xs font-mono text-[#1d1d1f] truncate font-medium">{filename}</div>
-                            {sizeKb && <div className="text-[10px] text-[#86868b] font-mono">{sizeKb} KB</div>}
+                          {sizeKb && (
+                            <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-[10px] font-mono text-white">
+                              {sizeKb}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Card Info & Actions */}
+                        <div className="p-2.5 flex items-center justify-between gap-1.5 border-t border-[#f0f0f2]">
+                          <div className="min-w-0 flex-1">
+                            <div className="text-[11px] font-mono text-[#1d1d1f] truncate font-medium" title={filename}>{filename}</div>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              onClick={() => setActiveSimWallpaper(filename)}
+                              className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition ${
+                                isSimActive ? 'bg-[#0071e3] text-white shadow-xs' : 'bg-[#f0f0f2] hover:bg-[#e5e5ea] text-[#1d1d1f]'
+                              }`}
+                              title="Tampilkan di Simulasi Layar TV di atas"
+                            >
+                              {isSimActive ? 'Aktif' : 'Simul'}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteWallpaper(filename)}
+                              className="p-1 rounded-lg text-[#86868b] hover:text-red-600 hover:bg-red-50 transition"
+                              title="Hapus Wallpaper dari TV"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         </div>
-                        <button
-                          onClick={() => handleDeleteWallpaper(filename)}
-                          className="p-1.5 rounded-lg text-[#86868b] hover:text-red-600 hover:bg-red-50 transition shrink-0 opacity-70 group-hover:opacity-100"
-                          title="Hapus Wallpaper dari TV"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
                       </div>
                     );
                   })}
@@ -892,6 +939,39 @@ export default function App() {
           </div>
         </div>
       </main>
+
+      {/* Lightbox Image Preview Modal */}
+      {previewModalImg && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-6 animate-fade-in"
+          onClick={() => setPreviewModalImg(null)}
+        >
+          <div 
+            className="relative max-w-4xl w-full bg-[#1c1c1e] rounded-3xl overflow-hidden shadow-2xl border border-white/10 flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-6 py-4 flex items-center justify-between border-b border-white/10 text-white">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-pink-400" />
+                <span className="text-sm font-mono truncate font-medium">{previewModalImg.name}</span>
+              </div>
+              <button 
+                onClick={() => setPreviewModalImg(null)}
+                className="p-1.5 rounded-full hover:bg-white/10 text-white/70 hover:text-white transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 bg-black flex items-center justify-center max-h-[75vh] overflow-hidden">
+              <img 
+                src={previewModalImg.url} 
+                alt={previewModalImg.name} 
+                className="max-h-[70vh] w-auto object-contain rounded-xl shadow-lg"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

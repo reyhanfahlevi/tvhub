@@ -169,6 +169,27 @@ app.get('/api/devices/:id/wallpapers', async (req, res) => {
   }
 });
 
+// Proxy wallpaper image binary
+app.get('/api/devices/:id/wallpapers/:name/file', async (req, res) => {
+  const ip = getTargetIp(req.params.id);
+  const name = encodeURIComponent(req.params.name);
+  try {
+    const response = await fetch(`http://${ip}:8080/api/wallpaper/file?name=${name}`, {
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!response.ok) {
+      return res.status(response.status).json({ error: 'Wallpaper file not found' });
+    }
+    const contentType = response.headers.get('content-type') || 'image/jpeg';
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    const arrayBuffer = await response.arrayBuffer();
+    res.send(Buffer.from(arrayBuffer));
+  } catch (err: any) {
+    res.status(502).json({ error: `Failed to stream wallpaper from ${ip}: ${err.message}` });
+  }
+});
+
 // Delete wallpaper on a specific TV
 app.delete('/api/devices/:id/wallpapers/:name', async (req, res) => {
   const ip = getTargetIp(req.params.id);
