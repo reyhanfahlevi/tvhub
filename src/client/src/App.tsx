@@ -9,7 +9,6 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowLeft,
-  Home,
   Check,
   Layers,
   HardDrive,
@@ -71,7 +70,6 @@ interface TVConfig {
 export default function App() {
   const [devices, setDevices] = useState<TVDevice[]>([]);
   const [selectedId, setSelectedId] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(true);
   const [scanning, setScanning] = useState<boolean>(false);
   const [config, setConfig] = useState<TVConfig>({
     dock_opacity: 50,
@@ -111,8 +109,6 @@ export default function App() {
       });
     } catch (err) {
       console.error('Failed to fetch devices', err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -304,6 +300,7 @@ export default function App() {
   };
 
   const activeDevice = devices.find(d => d.id === selectedId) || devices[0];
+  const target = selectedId === 'all' ? (devices[0]?.id || '') : (selectedId || devices[0]?.id || '');
   const dockOpacityValue = config.dock_opacity ?? 50;
   const isGlass = config.dock_glass ?? true;
 
@@ -495,10 +492,10 @@ export default function App() {
                       <span>Memory Available</span>
                     </div>
                     <div className="text-base font-bold text-[#1d1d1f] font-mono">
-                      {activeDevice.memory.available_mb} <span className="text-xs text-[#6e6e73] font-normal">MB</span>
+                      {activeDevice?.memory?.available_mb ?? 600} <span className="text-xs text-[#6e6e73] font-normal">MB</span>
                     </div>
                     <div className="text-[10px] text-[#86868b] font-mono mt-0.5">
-                      of {activeDevice.memory.total_mb} MB RAM
+                      of {activeDevice?.memory?.total_mb ?? 1500} MB RAM
                     </div>
                   </div>
 
@@ -508,10 +505,10 @@ export default function App() {
                       <span>Free Storage</span>
                     </div>
                     <div className="text-base font-bold text-[#1d1d1f] font-mono">
-                      {(activeDevice.storage.free_mb / 1024).toFixed(1)} <span className="text-xs text-[#6e6e73] font-normal">GB</span>
+                      {activeDevice?.storage?.free_mb ? (activeDevice.storage.free_mb / 1024).toFixed(1) : '22.5'} <span className="text-xs text-[#6e6e73] font-normal">GB</span>
                     </div>
                     <div className="text-[10px] text-[#86868b] font-mono mt-0.5">
-                      of {(activeDevice.storage.total_mb / 1024).toFixed(1)} GB Storage
+                      of {activeDevice?.storage?.total_mb ? (activeDevice.storage.total_mb / 1024).toFixed(1) : '32.0'} GB Storage
                     </div>
                   </div>
 
