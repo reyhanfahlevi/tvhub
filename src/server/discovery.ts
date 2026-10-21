@@ -70,15 +70,28 @@ export class DeviceDiscovery {
     this.isScanning = true;
     console.log(`[Scanner] Scanning subnet ${subnetPrefix}.0/24 on port 8080...`);
 
+    const activeIps = new Set<string>();
     const promises: Promise<void>[] = [];
     for (let i = 1; i <= 254; i++) {
       const ip = `${subnetPrefix}.${i}`;
-      promises.push(this.probeDevice(ip, 8080));
+      promises.push((async () => {
+        const ok = await this.probeDevice(ip, 8080);
+        if (ok) activeIps.add(ip);
+      })());
     }
 
     await Promise.all(promises);
+
+    // Prune any devices that failed to respond during this scan
+    for (const [id, dev] of this.devices.entries()) {
+      if (!activeIps.has(dev.ip)) {
+        console.log(`[Scanner] Pruning unreachable TV: ${dev.model} (${dev.ip})`);
+        this.devices.delete(id);
+      }
+    }
+
     this.isScanning = false;
-    console.log(`[Scanner] Scan complete. Found ${this.devices.size} TV(s).`);
+    console.log(`[Scanner] Scan complete. Found ${this.devices.size} active TV(s).`);
     return this.getDevices();
   }
 
@@ -118,19 +131,15 @@ export class DeviceDiscovery {
   }
 
   private async refreshStatus() {
-    const now = Date.now();
     for (const [id, dev] of this.devices.entries()) {
       try {
         const ok = await this.probeDevice(dev.ip, dev.port);
         if (!ok) {
-          // If offline for over 90 seconds, drop it so user doesn't see dead devices
-          if (now - dev.lastSeen > 90000) {
-            console.log(`[Discovery] Device ${dev.model} (${dev.ip}) went offline. Removing.`);
-            this.devices.delete(id);
-          }
+          console.log(`[Discovery] TV ${dev.model} (${dev.ip}) unreachable. Pruning.`);
+          this.devices.delete(id);
         }
       } catch {
-        // failed
+        this.devices.delete(id);
       }
     }
   }
