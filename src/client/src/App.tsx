@@ -19,7 +19,12 @@ import {
   CheckCircle2,
   Trash2,
   Eye,
-  X
+  X,
+  Compass,
+  Moon,
+  Sparkles,
+  MapPin,
+  Calendar
 } from 'lucide-react';
 
 interface WallpaperItem {
@@ -88,6 +93,11 @@ export default function App() {
   const [previewModalImg, setPreviewModalImg] = useState<{ name: string; url: string } | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [uploading, setUploading] = useState<boolean>(false);
+  const [prayerEnabled, setPrayerEnabled] = useState<boolean>(true);
+  const [prayerCity, setPrayerCity] = useState<string>('jakarta');
+  const [citiesList, setCitiesList] = useState<Record<string, { name: string; timezone: string }>>({});
+  const [prayerPreview, setPrayerPreview] = useState<any>(null);
+  const [prayerLoading, setPrayerLoading] = useState<boolean>(false);
 
   // Status feedback toast
   const showToast = (msg: string) => {
@@ -116,8 +126,25 @@ export default function App() {
   useEffect(() => {
     fetchDevices();
     const interval = setInterval(fetchDevices, 10000);
+    // Fetch available prayer cities
+    fetch('/api/widgets/prayer/cities')
+      .then(res => res.json())
+      .then(data => {
+        if (data.cities) setCitiesList(data.cities);
+      })
+      .catch(() => {});
     return () => clearInterval(interval);
   }, []);
+
+  // Fetch prayer preview whenever prayerCity changes
+  useEffect(() => {
+    fetch(`/api/widgets/prayer?city=${prayerCity}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.data) setPrayerPreview(data.data);
+      })
+      .catch(() => {});
+  }, [prayerCity]);
 
   // Fetch config, apps, wallpapers for selected device
   useEffect(() => {
@@ -133,6 +160,12 @@ export default function App() {
         if (cfgRes.ok) {
           const cfg = await cfgRes.json();
           setConfig(prev => ({ ...prev, ...cfg }));
+          if (cfg.widget_prayer) {
+            setPrayerEnabled(cfg.widget_prayer.enabled ?? true);
+            if (cfg.widget_prayer.city_key) {
+              setPrayerCity(cfg.widget_prayer.city_key);
+            }
+          }
         }
         if (appRes.ok) {
           const appData = await appRes.json();
@@ -331,6 +364,32 @@ export default function App() {
     }
   };
 
+  const handleApplyPrayerWidget = async (overrideEnabled?: boolean) => {
+    const isEn = overrideEnabled !== undefined ? overrideEnabled : prayerEnabled;
+    const target = selectedId === 'all' ? 'all' : (selectedId || devices[0]?.id);
+    if (!target) return;
+    setPrayerLoading(true);
+    try {
+      const url = target === 'all' ? '/api/broadcast/widgets/prayer' : `/api/devices/${target}/widgets/prayer`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: isEn, city: prayerCity }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(isEn ? `Widget Jadwal Sholat (${prayerCity}) aktif di TV!` : 'Widget Sholat dinonaktifkan di TV');
+        if (data.data) setPrayerPreview(data.data);
+      } else {
+        showToast(`Gagal set widget: ${data.error || res.statusText}`);
+      }
+    } catch (err: any) {
+      showToast(`Error: ${err.message}`);
+    } finally {
+      setPrayerLoading(false);
+    }
+  };
+
   const activeDevice = devices.find(d => d.id === selectedId) || devices[0];
   const target = selectedId === 'all' ? (devices[0]?.id || '') : (selectedId || devices[0]?.id || '');
   const dockOpacityValue = config.dock_opacity ?? 50;
@@ -456,6 +515,13 @@ export default function App() {
                     {config.show_stats && (
                       <div className="text-[9px] font-mono text-white/60 mt-0.5">
                         RAM {activeDevice?.memory?.available_mb || 600} MB free • Storage {((activeDevice?.storage?.free_mb || 23000) / 1024).toFixed(1)} GB free
+                      </div>
+                    )}
+                    {/* Realtime Prayer Widget Preview Pill */}
+                    {prayerEnabled && prayerPreview && (
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 mt-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-[9px] font-medium text-white shadow-xs">
+                        <span>{prayerPreview.title}</span>
+                        <span className="text-white/70 font-light">• {prayerPreview.countdownText}</span>
                       </div>
                     )}
                   </div>
@@ -770,6 +836,163 @@ export default function App() {
                 <Check className="w-4 h-4 stroke-[3]" />
                 <span>Terapkan Perubahan Langsung ke TV</span>
               </button>
+            </div>
+
+            {/* Widget Studio (Prayer Times & Extensibility) */}
+            <div className="apple-card rounded-3xl p-6 md:p-8 space-y-6">
+              <div className="flex items-center justify-between pb-4 border-b border-[#e5e5ea]">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                    <Moon className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-[#1d1d1f]">Widget Studio (Live TV Overlays)</h3>
+                    <p className="text-[11px] text-[#6e6e73]">Widget jadwal sholat dinamis & modul launcher TV</p>
+                  </div>
+                </div>
+                <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Kemenag Calibrated
+                </span>
+              </div>
+
+              {/* Widget Toggle & City Selector */}
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+                <div
+                  onClick={() => {
+                    const nextVal = !prayerEnabled;
+                    setPrayerEnabled(nextVal);
+                    handleApplyPrayerWidget(nextVal);
+                  }}
+                  className={`sm:col-span-6 p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
+                    prayerEnabled
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-[#1d1d1f]'
+                      : 'bg-[#f5f5f7] border-[#e5e5ea] text-[#6e6e73] hover:bg-[#eaeaed]'
+                  }`}
+                >
+                  <div>
+                    <div className="font-bold text-xs text-[#1d1d1f]">Widget Jadwal Sholat</div>
+                    <div className="text-[11px] text-[#6e6e73] mt-0.5">Tampil di header launcher TV</div>
+                  </div>
+                  <div className={`w-6 h-6 rounded-full border flex items-center justify-center transition-all ${
+                    prayerEnabled ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-[#d2d2d7] bg-white'
+                  }`}>
+                    {prayerEnabled && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                  </div>
+                </div>
+
+                <div className="sm:col-span-6 p-3.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-1">
+                  <label className="text-[10px] font-semibold text-[#6e6e73] flex items-center gap-1">
+                    <MapPin className="w-3 h-3 text-emerald-600" />
+                    <span>Lokasi Wilayah / Kota</span>
+                  </label>
+                  <select
+                    value={prayerCity}
+                    onChange={(e) => setPrayerCity(e.target.value)}
+                    className="w-full bg-white border border-[#d2d2d7] text-xs font-semibold text-[#1d1d1f] rounded-xl px-3 py-1.5 focus:outline-none focus:border-emerald-500 transition"
+                  >
+                    {Object.entries(citiesList).length > 0 ? (
+                      Object.entries(citiesList).map(([key, val]) => (
+                        <option key={key} value={key}>
+                          {val.name}
+                        </option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="jakarta">Jakarta (WIB)</option>
+                        <option value="bandung">Bandung (WIB)</option>
+                        <option value="surabaya">Surabaya (WIB)</option>
+                        <option value="semarang">Semarang (WIB)</option>
+                        <option value="yogyakarta">Yogyakarta (WIB)</option>
+                        <option value="medan">Medan (WIB)</option>
+                        <option value="palembang">Palembang (WIB)</option>
+                        <option value="makassar">Makassar (WITA)</option>
+                        <option value="denpasar">Denpasar / Bali (WITA)</option>
+                        <option value="balikpapan">Balikpapan (WITA)</option>
+                        <option value="jayapura">Jayapura (WIT)</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+              </div>
+
+              {/* TV Live Capsule Simulation Preview */}
+              {prayerPreview && (
+                <div className="p-4 rounded-2xl bg-[#1c1c1e] text-white space-y-3 border border-white/10 shadow-inner">
+                  <div className="flex items-center justify-between text-[10px] uppercase font-mono tracking-wider text-white/50">
+                    <span className="flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-emerald-400" />
+                      TV Header Capsule Preview
+                    </span>
+                    <span>Waktu Setempat</span>
+                  </div>
+
+                  {/* The Glass Capsule */}
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-xs font-medium text-white shadow-sm">
+                    <span className="font-semibold">{prayerPreview.title}</span>
+                    <span className="text-white/70 font-light">• {prayerPreview.countdownText}</span>
+                    <span className="text-white/50 text-[10px]">• {prayerPreview.cityName}</span>
+                  </div>
+
+                  {/* 5 Daily Prayers Schedule Grid */}
+                  <div className="grid grid-cols-5 gap-1.5 pt-1">
+                    {[
+                      { key: 'fajr', name: 'Subuh', time: prayerPreview.fajr },
+                      { key: 'dhuhr', name: 'Dzuhur', time: prayerPreview.dhuhr },
+                      { key: 'asr', name: 'Ashar', time: prayerPreview.asr },
+                      { key: 'maghrib', name: 'Maghrib', time: prayerPreview.maghrib },
+                      { key: 'isha', name: 'Isya', time: prayerPreview.isha },
+                    ].map((p) => {
+                      const isNext = prayerPreview.nextPrayer === p.key;
+                      return (
+                        <div
+                          key={p.key}
+                          className={`p-2 rounded-xl text-center border transition-all ${
+                            isNext
+                              ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 font-bold'
+                              : 'bg-white/5 border-white/5 text-white/70 font-medium'
+                          }`}
+                        >
+                          <div className="text-[9px] uppercase tracking-wider">{p.name}</div>
+                          <div className="text-xs font-mono mt-0.5">{p.time}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Button: Apply Prayer Widget */}
+              <button
+                type="button"
+                onClick={() => handleApplyPrayerWidget()}
+                disabled={prayerLoading}
+                className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] disabled:opacity-50 text-white font-bold text-xs tracking-wide shadow-md transition-all flex items-center justify-center gap-2"
+              >
+                {prayerLoading ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Check className="w-4 h-4 stroke-[3]" />
+                )}
+                <span>
+                  {selectedId === 'all'
+                    ? 'Broadcast Widget Sholat ke Semua TV'
+                    : `Terapkan Jadwal Sholat (${prayerPreview?.cityName || prayerCity}) ke TV`}
+                </span>
+              </button>
+
+              {/* Custom Module Card Extensibility Note */}
+              <div className="p-3.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex items-start gap-3">
+                <div className="p-1.5 rounded-lg bg-[#0071e3]/10 text-[#0071e3] mt-0.5">
+                  <Layers className="w-3.5 h-3.5" />
+                </div>
+                <div className="text-[11px] text-[#6e6e73] leading-relaxed">
+                  <span className="font-semibold text-[#1d1d1f]">Dukungan Custom Widget & Module Card (Spec 1):</span>
+                  <br />
+                  Selain widget live dari TVHub, CleanYourTV mendukung APK pihak ketiga untuk menyematkan kartu interaktif native di dock launcher via category{' '}
+                  <code className="text-[10px] font-mono text-[#0071e3] bg-[#0071e3]/10 px-1 py-0.5 rounded">com.gathin.tvhome.category.DOCK_CARD</code>.
+                </div>
+              </div>
             </div>
 
             {/* Wallpaper Showcase & Dropzone */}

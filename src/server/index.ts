@@ -4,6 +4,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { DeviceDiscovery } from './discovery.js';
+import { calculatePrayerTimes, INDONESIAN_CITIES } from './prayer.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -243,6 +244,93 @@ app.post('/api/broadcast/wallpapers/active', async (req, res) => {
     }
   }
   res.json({ results });
+});
+
+// Widget: List available cities for prayer times
+app.get('/api/widgets/prayer/cities', (_req, res) => {
+  res.json({ cities: INDONESIAN_CITIES });
+});
+
+// Widget: Calculate prayer times for city
+app.get('/api/widgets/prayer', (req, res) => {
+  const city = (req.query.city as string) || 'jakarta';
+  const data = calculatePrayerTimes(city);
+  res.json({ data });
+});
+
+// Widget: Apply prayer widget to specific TV
+app.post('/api/devices/:id/widgets/prayer', async (req, res) => {
+  const targetId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const ip = getTargetIp(targetId);
+  const enabled = req.body?.enabled ?? true;
+  const city = req.body?.city || 'jakarta';
+  const data = calculatePrayerTimes(city);
+
+  const payload = {
+    widget_prayer: {
+      enabled,
+      city: data.cityName,
+      city_key: city,
+      title: data.title,
+      subtitle: data.subtitle,
+      fajr: data.fajr,
+      dhuhr: data.dhuhr,
+      asr: data.asr,
+      maghrib: data.maghrib,
+      isha: data.isha,
+    }
+  };
+
+  try {
+    const response = await fetch(`http://${ip}:8080/api/config`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(4000),
+    });
+    const result = await response.json();
+    res.json({ status: 'ok', data, result });
+  } catch (err: any) {
+    res.status(502).json({ error: `Failed to update prayer widget on ${ip}: ${err.message}` });
+  }
+});
+
+// Widget: Broadcast prayer widget to all TVs
+app.post('/api/broadcast/widgets/prayer', async (req, res) => {
+  const enabled = req.body?.enabled ?? true;
+  const city = req.body?.city || 'jakarta';
+  const data = calculatePrayerTimes(city);
+  const devices = discovery.getDevices();
+  const payload = {
+    widget_prayer: {
+      enabled,
+      city: data.cityName,
+      city_key: city,
+      title: data.title,
+      subtitle: data.subtitle,
+      fajr: data.fajr,
+      dhuhr: data.dhuhr,
+      asr: data.asr,
+      maghrib: data.maghrib,
+      isha: data.isha,
+    }
+  };
+  const results: any[] = [];
+  for (const dev of devices) {
+    try {
+      const response = await fetch(`http://${dev.ip}:8080/api/config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(4000),
+      });
+      const result = await response.json();
+      results.push({ id: dev.id, ip: dev.ip, status: 'ok', result });
+    } catch (err: any) {
+      results.push({ id: dev.id, ip: dev.ip, status: 'error', error: err.message });
+    }
+  }
+  res.json({ results, data });
 });
 
 // Upload wallpaper to a specific TV
