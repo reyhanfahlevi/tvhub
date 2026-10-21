@@ -100,7 +100,8 @@ export default function App() {
   const [uploading, setUploading] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'launcher' | 'widgets'>('launcher');
   const [prayerEnabled, setPrayerEnabled] = useState<boolean>(true);
-  const [prayerPosition, setPrayerPosition] = useState<'header_left' | 'header_right' | 'above_dock'>('header_left');
+  const [prayerMode, setPrayerMode] = useState<'compact' | 'full'>('full');
+  const [prayerPosition, setPrayerPosition] = useState<'header_left' | 'header_right' | 'above_dock'>('above_dock');
   const [prayerCity, setPrayerCity] = useState<string>('jakarta');
   const [citiesList, setCitiesList] = useState<Record<string, { name: string; timezone: string }>>({});
   const [prayerPreview, setPrayerPreview] = useState<any>(null);
@@ -174,6 +175,9 @@ export default function App() {
             }
             if (cfg.widget_prayer.position) {
               setPrayerPosition(cfg.widget_prayer.position);
+            }
+            if (cfg.widget_prayer.mode) {
+              setPrayerMode(cfg.widget_prayer.mode);
             }
           }
         }
@@ -374,9 +378,14 @@ export default function App() {
     }
   };
 
-  const handleApplyPrayerWidget = async (overrideEnabled?: boolean, overridePosition?: 'header_left' | 'header_right' | 'above_dock') => {
+  const handleApplyPrayerWidget = async (
+    overrideEnabled?: boolean,
+    overridePosition?: 'header_left' | 'header_right' | 'above_dock',
+    overrideMode?: 'compact' | 'full'
+  ) => {
     const isEn = overrideEnabled !== undefined ? overrideEnabled : prayerEnabled;
     const pos = overridePosition !== undefined ? overridePosition : prayerPosition;
+    const m = overrideMode !== undefined ? overrideMode : prayerMode;
     const target = selectedId === 'all' ? 'all' : (selectedId || devices[0]?.id);
     if (!target) return;
     setPrayerLoading(true);
@@ -385,14 +394,14 @@ export default function App() {
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled: isEn, position: pos, city: prayerCity }),
+        body: JSON.stringify({ enabled: isEn, position: pos, mode: m, city: prayerCity }),
       });
       const data = await res.json();
       if (res.ok) {
-        showToast(isEn ? `Widget Jadwal Sholat (${pos.replace('_', ' ')}) aktif di TV!` : 'Widget Sholat dinonaktifkan di TV');
+        showToast(isEn ? `Prayer Widget (${m === 'full' ? 'Full Schedule' : pos.replace('_', ' ')}) applied!` : 'Prayer Widget disabled');
         if (data.data) setPrayerPreview(data.data);
       } else {
-        showToast(`Gagal set widget: ${data.error || res.statusText}`);
+        showToast(`Failed: ${data.error || res.statusText}`);
       }
     } catch (err: any) {
       showToast(`Error: ${err.message}`);
@@ -620,7 +629,7 @@ export default function App() {
                       </div>
                     )}
                     {/* Realtime Prayer Widget Preview Pill (Header Left) */}
-                    {prayerEnabled && prayerPreview && prayerPosition === 'header_left' && (
+                    {prayerEnabled && prayerPreview && prayerMode === 'compact' && prayerPosition === 'header_left' && (
                       <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 mt-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-[9px] font-medium text-white shadow-xs">
                         <span>{prayerPreview.title}</span>
                         <span className="text-white/70 font-light">• {prayerPreview.countdownText}</span>
@@ -629,7 +638,7 @@ export default function App() {
                   </div>
                   <div className="flex items-center gap-1.5">
                     {/* Realtime Prayer Widget Preview Pill (Header Right) */}
-                    {prayerEnabled && prayerPreview && prayerPosition === 'header_right' && (
+                    {prayerEnabled && prayerPreview && prayerMode === 'compact' && prayerPosition === 'header_right' && (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/25 backdrop-blur-md border border-emerald-400/40 text-[9px] font-semibold text-emerald-200">
                         <span>{prayerPreview.title}</span>
                         <span className="text-white/70 font-light">• {prayerPreview.countdownText}</span>
@@ -643,13 +652,30 @@ export default function App() {
 
                 {/* Simulated Dock with REALTIME Opacity & Glass Reflection */}
                 <div className="relative z-10 flex flex-col items-center">
-                  {/* Realtime Prayer Widget Preview Pill (Above Dock) */}
-                  {prayerEnabled && prayerPreview && prayerPosition === 'above_dock' && (
-                    <div className="self-center mb-2 inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-[10px] font-semibold text-white shadow-md">
-                      <span>{prayerPreview.title}</span>
-                      <span className="text-white/70 font-normal">• {prayerPreview.countdownText}</span>
-                      <span className="text-white/50 text-[9px]">• {prayerPreview.cityName}</span>
-                    </div>
+                  {/* Realtime Prayer Widget Preview (Full Schedule Strip vs Compact Pill) */}
+                  {prayerEnabled && prayerPreview && (
+                    prayerMode === 'full' ? (
+                      <div className="self-center mb-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-[9px] font-medium text-white shadow-md">
+                        <span className={prayerPreview.nextPrayer === 'fajr' ? 'text-white font-bold' : 'text-white/60'}>Subuh {prayerPreview.fajr}</span>
+                        <span className="text-white/30">|</span>
+                        <span className={prayerPreview.nextPrayer === 'dhuhr' ? 'text-white font-bold' : 'text-white/60'}>Dzuhur {prayerPreview.dhuhr}</span>
+                        <span className="text-white/30">|</span>
+                        <span className={prayerPreview.nextPrayer === 'asr' ? 'text-white font-bold' : 'text-white/60'}>Ashar {prayerPreview.asr}</span>
+                        <span className="text-white/30">|</span>
+                        <span className={prayerPreview.nextPrayer === 'maghrib' ? 'text-white font-bold' : 'text-white/60'}>Maghrib {prayerPreview.maghrib}</span>
+                        <span className="text-white/30">|</span>
+                        <span className={prayerPreview.nextPrayer === 'isha' ? 'text-white font-bold' : 'text-white/60'}>Isya {prayerPreview.isha}</span>
+                        <span className="text-emerald-300 font-semibold">• 🕌 {prayerPreview.nextPrayerNameId} in {prayerPreview.countdownText}</span>
+                      </div>
+                    ) : (
+                      prayerPosition === 'above_dock' && (
+                        <div className="self-center mb-2 inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-[10px] font-semibold text-white shadow-md">
+                          <span>{prayerPreview.title}</span>
+                          <span className="text-white/70 font-normal">• {prayerPreview.countdownText}</span>
+                          <span className="text-white/50 text-[9px]">• {prayerPreview.cityName}</span>
+                        </div>
+                      )
+                    )
                   )}
 
                   <div className="text-xs font-semibold text-white/90 mb-2 self-start drop-shadow">
@@ -1219,123 +1245,200 @@ export default function App() {
         ) : (
           /* Dedicated Widgets Page */
           <div className="space-y-6 animate-fade-in">
-            {/* 1. Placement Selector: Pilihan Posisi Widget di TV */}
+            {/* 1. Format & Layout Selector */}
             <div className="apple-card rounded-3xl p-6 md:p-8 space-y-5">
               <div className="flex items-center justify-between pb-3 border-b border-[#e5e5ea]">
                 <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-[#0071e3]/10 text-[#0071e3] border border-[#0071e3]/20">
-                    <PanelTop className="w-4 h-4" />
+                  <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                    <LayoutGrid className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-[#1d1d1f]">Pilih Posisi Widget di Layar TV</h3>
-                    <p className="text-[11px] text-[#6e6e73]">Tentukan letak widget pada tampilan launcher TV</p>
+                    <h3 className="text-sm font-bold text-[#1d1d1f]">Widget Display Format</h3>
+                    <p className="text-[11px] text-[#6e6e73]">Choose between full 5-prayer daily schedule or compact capsule</p>
                   </div>
                 </div>
-                <span className="text-xs font-mono text-[#0071e3] font-bold">
-                  {prayerPosition === 'header_left' ? 'Kiri Bawah Jam' : prayerPosition === 'header_right' ? 'Kanan Atas Status' : 'Tengah di Atas Dock'}
+                <span className="text-xs font-mono text-emerald-600 font-bold">
+                  {prayerMode === 'full' ? 'Full Schedule (5 Prayers)' : 'Compact Single Pill'}
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Option A: header_left */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Full Schedule */}
                 <div
-                  onClick={() => setPrayerPosition('header_left')}
+                  onClick={() => setPrayerMode('full')}
                   className={`p-5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between ${
-                    prayerPosition === 'header_left'
+                    prayerMode === 'full'
                       ? 'border-emerald-500 bg-emerald-500/5 shadow-md ring-2 ring-emerald-500/20'
                       : 'border-[#e5e5ea] bg-[#fbfbfd] hover:bg-[#f5f5f7]'
                   }`}
                 >
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <div className={`p-2 rounded-xl ${prayerPosition === 'header_left' ? 'bg-emerald-500 text-white' : 'bg-[#eaeaed] text-[#6e6e73]'}`}>
-                        <AlignLeft className="w-4 h-4" />
+                      <div className={`p-2 rounded-xl ${prayerMode === 'full' ? 'bg-emerald-500 text-white' : 'bg-[#eaeaed] text-[#6e6e73]'}`}>
+                        <Calendar className="w-4 h-4" />
                       </div>
-                      {prayerPosition === 'header_left' && (
+                      {prayerMode === 'full' && (
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white">
-                          Aktif Terpilih
+                          Active
                         </span>
                       )}
                     </div>
                     <div>
-                      <div className="font-bold text-sm text-[#1d1d1f]">Kiri Bawah Jam</div>
+                      <div className="font-bold text-sm text-[#1d1d1f]">Full Daily Schedule (5 Prayers)</div>
                       <div className="text-[11px] text-[#6e6e73] mt-1 leading-relaxed">
-                        Tampil di bawah jam & memory stats. Bersih dan menyatu alami dengan header.
+                        Displays all 5 prayer times simultaneously (Subuh, Dzuhur, Ashar, Maghrib, Isya) in a horizontal strip with upcoming prayer highlighted.
                       </div>
                     </div>
                   </div>
-                  <div className="mt-4 pt-3 border-t border-[#e5e5ea] text-[10px] font-mono text-[#86868b]">
-                    Posisi Default
+                  <div className="mt-4 pt-3 border-t border-[#e5e5ea] text-[10px] font-mono text-emerald-700 font-medium">
+                    Subuh • Dzuhur • Ashar • Maghrib • Isya
                   </div>
                 </div>
 
-                {/* Option B: header_right */}
+                {/* Compact Pill */}
                 <div
-                  onClick={() => setPrayerPosition('header_right')}
+                  onClick={() => setPrayerMode('compact')}
                   className={`p-5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between ${
-                    prayerPosition === 'header_right'
+                    prayerMode === 'compact'
                       ? 'border-emerald-500 bg-emerald-500/5 shadow-md ring-2 ring-emerald-500/20'
                       : 'border-[#e5e5ea] bg-[#fbfbfd] hover:bg-[#f5f5f7]'
                   }`}
                 >
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <div className={`p-2 rounded-xl ${prayerPosition === 'header_right' ? 'bg-emerald-500 text-white' : 'bg-[#eaeaed] text-[#6e6e73]'}`}>
-                        <AlignRight className="w-4 h-4" />
+                      <div className={`p-2 rounded-xl ${prayerMode === 'compact' ? 'bg-emerald-500 text-white' : 'bg-[#eaeaed] text-[#6e6e73]'}`}>
+                        <Moon className="w-4 h-4" />
                       </div>
-                      {prayerPosition === 'header_right' && (
+                      {prayerMode === 'compact' && (
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white">
-                          Aktif Terpilih
+                          Active
                         </span>
                       )}
                     </div>
                     <div>
-                      <div className="font-bold text-sm text-[#1d1d1f]">Kanan Atas (Status Bar)</div>
+                      <div className="font-bold text-sm text-[#1d1d1f]">Compact Pill (Upcoming Only)</div>
                       <div className="text-[11px] text-[#6e6e73] mt-1 leading-relaxed">
-                        Sejajar dengan tombol Inputs, Wi-Fi & Settings di pojok kanan atas layar.
+                        Minimal single capsule displaying only the next upcoming prayer and countdown.
                       </div>
                     </div>
                   </div>
                   <div className="mt-4 pt-3 border-t border-[#e5e5ea] text-[10px] font-mono text-[#86868b]">
-                    Status Bar Pill
-                  </div>
-                </div>
-
-                {/* Option C: above_dock */}
-                <div
-                  onClick={() => setPrayerPosition('above_dock')}
-                  className={`p-5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between ${
-                    prayerPosition === 'above_dock'
-                      ? 'border-emerald-500 bg-emerald-500/5 shadow-md ring-2 ring-emerald-500/20'
-                      : 'border-[#e5e5ea] bg-[#fbfbfd] hover:bg-[#f5f5f7]'
-                  }`}
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className={`p-2 rounded-xl ${prayerPosition === 'above_dock' ? 'bg-emerald-500 text-white' : 'bg-[#eaeaed] text-[#6e6e73]'}`}>
-                        <AlignCenter className="w-4 h-4" />
-                      </div>
-                      {prayerPosition === 'above_dock' && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white">
-                          Aktif Terpilih
-                        </span>
-                      )}
-                    </div>
-                    <div>
-                      <div className="font-bold text-sm text-[#1d1d1f]">Tengah di Atas Dock</div>
-                      <div className="text-[11px] text-[#6e6e73] mt-1 leading-relaxed">
-                        Floating pill tepat di tengah atas barisan ikon aplikasi TV. Sangat jelas terlihat.
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-4 pt-3 border-t border-[#e5e5ea] text-[10px] font-mono text-[#86868b]">
-                    Floating Center Pill
+                    🕌 Next Prayer Only
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* 2. Jadwal Sholat Controller */}
+            {/* 2. Placement Selector (When in compact mode) */}
+            {prayerMode === 'compact' && (
+              <div className="apple-card rounded-3xl p-6 md:p-8 space-y-5">
+                <div className="flex items-center justify-between pb-3 border-b border-[#e5e5ea]">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-xl bg-[#0071e3]/10 text-[#0071e3] border border-[#0071e3]/20">
+                      <PanelTop className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-[#1d1d1f]">Screen Position</h3>
+                      <p className="text-[11px] text-[#6e6e73]">Select where the compact capsule appears on the TV</p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-mono text-[#0071e3] font-bold">
+                    {prayerPosition === 'header_left' ? 'Header Left' : prayerPosition === 'header_right' ? 'Header Right' : 'Above Dock'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Option A: header_left */}
+                  <div
+                    onClick={() => setPrayerPosition('header_left')}
+                    className={`p-5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between ${
+                      prayerPosition === 'header_left'
+                        ? 'border-emerald-500 bg-emerald-500/5 shadow-md ring-2 ring-emerald-500/20'
+                        : 'border-[#e5e5ea] bg-[#fbfbfd] hover:bg-[#f5f5f7]'
+                    }`}
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className={`p-2 rounded-xl ${prayerPosition === 'header_left' ? 'bg-emerald-500 text-white' : 'bg-[#eaeaed] text-[#6e6e73]'}`}>
+                          <AlignLeft className="w-4 h-4" />
+                        </div>
+                        {prayerPosition === 'header_left' && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white">
+                            Selected
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <div className="font-bold text-sm text-[#1d1d1f]">Header Left (Under Clock)</div>
+                        <div className="text-[11px] text-[#6e6e73] mt-1 leading-relaxed">
+                          Cleanly placed directly below clock & memory stats.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Option B: header_right */}
+                  <div
+                    onClick={() => setPrayerPosition('header_right')}
+                    className={`p-5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between ${
+                      prayerPosition === 'header_right'
+                        ? 'border-emerald-500 bg-emerald-500/5 shadow-md ring-2 ring-emerald-500/20'
+                        : 'border-[#e5e5ea] bg-[#fbfbfd] hover:bg-[#f5f5f7]'
+                    }`}
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className={`p-2 rounded-xl ${prayerPosition === 'header_right' ? 'bg-emerald-500 text-white' : 'bg-[#eaeaed] text-[#6e6e73]'}`}>
+                          <AlignRight className="w-4 h-4" />
+                        </div>
+                        {prayerPosition === 'header_right' && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white">
+                            Selected
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <div className="font-bold text-sm text-[#1d1d1f]">Header Right (Status Bar)</div>
+                        <div className="text-[11px] text-[#6e6e73] mt-1 leading-relaxed">
+                          Aligned with Inputs & Wi-Fi pills on the top right.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Option C: above_dock */}
+                  <div
+                    onClick={() => setPrayerPosition('above_dock')}
+                    className={`p-5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between ${
+                      prayerPosition === 'above_dock'
+                        ? 'border-emerald-500 bg-emerald-500/5 shadow-md ring-2 ring-emerald-500/20'
+                        : 'border-[#e5e5ea] bg-[#fbfbfd] hover:bg-[#f5f5f7]'
+                    }`}
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className={`p-2 rounded-xl ${prayerPosition === 'above_dock' ? 'bg-emerald-500 text-white' : 'bg-[#eaeaed] text-[#6e6e73]'}`}>
+                          <AlignCenter className="w-4 h-4" />
+                        </div>
+                        {prayerPosition === 'above_dock' && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white">
+                            Selected
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <div className="font-bold text-sm text-[#1d1d1f]">Center (Above Dock)</div>
+                        <div className="text-[11px] text-[#6e6e73] mt-1 leading-relaxed">
+                          Floating capsule centered above app dock.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 3. Prayer Configuration */}
             <div className="apple-card rounded-3xl p-6 md:p-8 space-y-6">
               <div className="flex items-center justify-between pb-4 border-b border-[#e5e5ea]">
                 <div className="flex items-center gap-2.5">
@@ -1343,8 +1446,8 @@ export default function App() {
                     <Moon className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-[#1d1d1f]">Widget Jadwal Sholat</h3>
-                    <p className="text-[11px] text-[#6e6e73]">Kalkulasi otomatis waktu sholat & hitung mundur ke waktu berikutnya</p>
+                    <h3 className="text-sm font-bold text-[#1d1d1f]">Prayer Times Data</h3>
+                    <p className="text-[11px] text-[#6e6e73]">Astronomical calculation with live local countdown</p>
                   </div>
                 </div>
                 <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold flex items-center gap-1">
@@ -1359,7 +1462,7 @@ export default function App() {
                   onClick={() => {
                     const nextVal = !prayerEnabled;
                     setPrayerEnabled(nextVal);
-                    handleApplyPrayerWidget(nextVal, prayerPosition);
+                    handleApplyPrayerWidget(nextVal, prayerPosition, prayerMode);
                   }}
                   className={`sm:col-span-5 p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
                     prayerEnabled
@@ -1368,8 +1471,8 @@ export default function App() {
                   }`}
                 >
                   <div>
-                    <div className="font-bold text-xs text-[#1d1d1f]">Aktifkan Widget di TV</div>
-                    <div className="text-[11px] text-[#6e6e73] mt-0.5">Tampilkan pill sholat di layar launcher</div>
+                    <div className="font-bold text-xs text-[#1d1d1f]">Enable Widget on TV</div>
+                    <div className="text-[11px] text-[#6e6e73] mt-0.5">Show prayer times overlay on launcher</div>
                   </div>
                   <div className={`w-6 h-6 rounded-full border flex items-center justify-center transition-all ${
                     prayerEnabled ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-[#d2d2d7] bg-white'
@@ -1382,14 +1485,14 @@ export default function App() {
                   <div className="flex items-center justify-between">
                     <label className="text-[10px] font-semibold text-[#6e6e73] flex items-center gap-1">
                       <MapPin className="w-3 h-3 text-emerald-600" />
-                      <span>Lokasi Wilayah / Kota</span>
+                      <span>Location / City</span>
                     </label>
                     <button
                       type="button"
                       onClick={handleAutoDetect}
                       disabled={prayerLoading}
                       className="text-[10px] text-emerald-600 hover:text-emerald-700 font-bold flex items-center gap-1 cursor-pointer transition hover:underline"
-                      title="Deteksi lokasi otomatis via IP Geolocation"
+                      title="Auto-detect location from IP Geolocation"
                     >
                       <Sparkles className="w-3 h-3" />
                       <span>Auto-Detect IP</span>
@@ -1429,7 +1532,7 @@ export default function App() {
                       onClick={handleBrowserGps}
                       disabled={prayerLoading}
                       className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-emerald-50 border border-[#d2d2d7] hover:border-emerald-300 text-emerald-700 text-[10px] font-bold transition flex items-center gap-1 shadow-2xs"
-                      title="Gunakan koordinat GPS akurat dari browser"
+                      title="Use accurate GPS from browser"
                     >
                       <Compass className="w-3.5 h-3.5" />
                       <span>GPS</span>
@@ -1438,22 +1541,15 @@ export default function App() {
                 </div>
               </div>
 
-              {/* TV Live Capsule Simulation Preview */}
+              {/* Today's Schedule Grid */}
               {prayerPreview && (
                 <div className="p-4 rounded-2xl bg-[#1c1c1e] text-white space-y-3 border border-white/10 shadow-inner">
                   <div className="flex items-center justify-between text-[10px] uppercase font-mono tracking-wider text-white/50">
                     <span className="flex items-center gap-1">
                       <Sparkles className="w-3 h-3 text-emerald-400" />
-                      Preview Tampilan Pill di TV
+                      Today's Prayer Times Schedule
                     </span>
-                    <span>Waktu Setempat</span>
-                  </div>
-
-                  {/* The Glass Capsule */}
-                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-xs font-medium text-white shadow-sm">
-                    <span className="font-semibold">{prayerPreview.title}</span>
-                    <span className="text-white/70 font-light">• {prayerPreview.countdownText}</span>
-                    <span className="text-white/50 text-[10px]">• {prayerPreview.cityName}</span>
+                    <span>{prayerPreview.cityName}</span>
                   </div>
 
                   {/* 5 Daily Prayers Schedule Grid */}
@@ -1498,8 +1594,8 @@ export default function App() {
                 )}
                 <span>
                   {selectedId === 'all'
-                    ? `Broadcast Posisi (${prayerPosition.replace('_', ' ')}) & Widget ke Semua TV`
-                    : `Terapkan Posisi (${prayerPosition.replace('_', ' ')}) & Jadwal Sholat ke TV`}
+                    ? `Broadcast ${prayerMode === 'full' ? 'Full Schedule' : 'Compact Pill'} to All TVs`
+                    : `Apply ${prayerMode === 'full' ? 'Full Schedule' : 'Compact Pill'} to TV`}
                 </span>
               </button>
             </div>

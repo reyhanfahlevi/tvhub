@@ -290,6 +290,7 @@ app.post('/api/devices/:id/widgets/prayer', async (req, res) => {
   const ip = getTargetIp(targetId);
   const enabled = req.body?.enabled ?? true;
   const position = req.body?.position || 'header_left';
+  const mode = req.body?.mode || 'compact';
   const city = req.body?.city || 'jakarta';
   const coords = req.body?.coords;
 
@@ -307,6 +308,7 @@ app.post('/api/devices/:id/widgets/prayer', async (req, res) => {
     widget_prayer: {
       enabled,
       position,
+      mode,
       city: data.cityName,
       city_key: city,
       title: data.title,
@@ -337,6 +339,7 @@ app.post('/api/devices/:id/widgets/prayer', async (req, res) => {
 app.post('/api/broadcast/widgets/prayer', async (req, res) => {
   const enabled = req.body?.enabled ?? true;
   const position = req.body?.position || 'header_left';
+  const mode = req.body?.mode || 'compact';
   const city = req.body?.city || 'jakarta';
   const coords = req.body?.coords;
 
@@ -355,6 +358,7 @@ app.post('/api/broadcast/widgets/prayer', async (req, res) => {
     widget_prayer: {
       enabled,
       position,
+      mode,
       city: data.cityName,
       city_key: city,
       title: data.title,
