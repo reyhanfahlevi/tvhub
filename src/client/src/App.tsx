@@ -301,21 +301,29 @@ export default function App() {
               <span>All TVs ({devices.length})</span>
             </button>
 
-            {devices.map((dev) => (
-              <button
-                key={dev.id}
-                onClick={() => setSelectedId(dev.id)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
-                  selectedId === dev.id
-                    ? 'bg-[#0071e3] text-white shadow-sm'
-                    : 'text-[#6e6e73] hover:text-[#1d1d1f]'
-                }`}
-              >
-                <span className={`w-1.5 h-1.5 rounded-full ${selectedId === dev.id ? 'bg-white' : 'bg-emerald-500'}`} />
-                <span>{dev.model === 'SWTV' ? 'Coocaa TV' : dev.model}</span>
-                <span className="text-[10px] font-mono opacity-80">({dev.ip})</span>
-              </button>
-            ))}
+            {devices.map((dev) => {
+              const isOnline = (Date.now() - (dev.lastSeen || 0)) < 90000;
+              return (
+                <button
+                  key={dev.id}
+                  onClick={() => setSelectedId(dev.id)}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 ${
+                    selectedId === dev.id
+                      ? 'bg-[#0071e3] text-white shadow-sm'
+                      : 'text-[#6e6e73] hover:text-[#1d1d1f]'
+                  }`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${
+                    selectedId === dev.id 
+                      ? 'bg-white' 
+                      : (isOnline ? 'bg-emerald-500' : 'bg-amber-400')
+                  }`} />
+                  <span>{dev.model === 'SWTV' ? 'Coocaa TV' : dev.model}</span>
+                  {!isOnline && <span className="text-[9px] font-medium px-1 py-0.2 rounded bg-amber-100 text-amber-700">Sleep</span>}
+                  <span className="text-[10px] font-mono opacity-80">({dev.ip})</span>
+                </button>
+              );
+            })}
           </div>
 
           <button

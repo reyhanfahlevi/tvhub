@@ -118,11 +118,16 @@ export class DeviceDiscovery {
   }
 
   private async refreshStatus() {
+    const now = Date.now();
     for (const [id, dev] of this.devices.entries()) {
       try {
         const ok = await this.probeDevice(dev.ip, dev.port);
         if (!ok) {
-          // If offline for over 2 minutes, keep it or mark offline
+          // If offline for over 90 seconds, drop it so user doesn't see dead devices
+          if (now - dev.lastSeen > 90000) {
+            console.log(`[Discovery] Device ${dev.model} (${dev.ip}) went offline. Removing.`);
+            this.devices.delete(id);
+          }
         }
       } catch {
         // failed
