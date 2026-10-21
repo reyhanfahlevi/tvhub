@@ -239,8 +239,9 @@ if (fs.existsSync(clientDist)) {
   });
 }
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`\n======================================================`);
   console.log(`🚀 tvhub server running at http://localhost:${PORT}`);
+  console.log(`🌐 Network: http://10.20.50.153:${PORT}`);
   console.log(`======================================================\n`);
 });
