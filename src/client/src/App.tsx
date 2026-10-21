@@ -617,6 +617,7 @@ export default function App() {
                 />
 
                 {/* Top Status Header on TV */}
+                {/* Top Header Bar */}
                 <div className="relative z-10 flex items-start justify-between text-white/90">
                   <div>
                     <div className="text-[10px] tracking-wider uppercase font-semibold text-white/60">
@@ -650,23 +651,41 @@ export default function App() {
                   </div>
                 </div>
 
+                {/* Realtime Prayer Widget Preview Strip (Full Mode - Below Status Bar Position) */}
+                {prayerEnabled && prayerPreview && prayerMode === 'full' && prayerPosition !== 'above_dock' && (
+                  <div className="relative z-10 self-center my-3 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-[9px] font-medium text-white shadow-md">
+                    <span className={prayerPreview.nextPrayer === 'fajr' ? 'text-white font-bold' : 'text-white/60'}>Fajr {prayerPreview.fajr}</span>
+                    <span className="text-white/30">|</span>
+                    <span className={prayerPreview.nextPrayer === 'dhuhr' ? 'text-white font-bold' : 'text-white/60'}>Dhuhr {prayerPreview.dhuhr}</span>
+                    <span className="text-white/30">|</span>
+                    <span className={prayerPreview.nextPrayer === 'asr' ? 'text-white font-bold' : 'text-white/60'}>Asr {prayerPreview.asr}</span>
+                    <span className="text-white/30">|</span>
+                    <span className={prayerPreview.nextPrayer === 'maghrib' ? 'text-white font-bold' : 'text-white/60'}>Maghrib {prayerPreview.maghrib}</span>
+                    <span className="text-white/30">|</span>
+                    <span className={prayerPreview.nextPrayer === 'isha' ? 'text-white font-bold' : 'text-white/60'}>Isha {prayerPreview.isha}</span>
+                    <span className="text-emerald-300 font-semibold">• 🕌 {prayerPreview.nextPrayerNameId} in {prayerPreview.countdownText}</span>
+                  </div>
+                )}
+
                 {/* Simulated Dock with REALTIME Opacity & Glass Reflection */}
                 <div className="relative z-10 flex flex-col items-center">
-                  {/* Realtime Prayer Widget Preview (Full Schedule Strip vs Compact Pill) */}
+                  {/* Realtime Prayer Widget Preview (Above Dock Position) */}
                   {prayerEnabled && prayerPreview && (
                     prayerMode === 'full' ? (
-                      <div className="self-center mb-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-[9px] font-medium text-white shadow-md">
-                        <span className={prayerPreview.nextPrayer === 'fajr' ? 'text-white font-bold' : 'text-white/60'}>Fajr {prayerPreview.fajr}</span>
-                        <span className="text-white/30">|</span>
-                        <span className={prayerPreview.nextPrayer === 'dhuhr' ? 'text-white font-bold' : 'text-white/60'}>Dhuhr {prayerPreview.dhuhr}</span>
-                        <span className="text-white/30">|</span>
-                        <span className={prayerPreview.nextPrayer === 'asr' ? 'text-white font-bold' : 'text-white/60'}>Asr {prayerPreview.asr}</span>
-                        <span className="text-white/30">|</span>
-                        <span className={prayerPreview.nextPrayer === 'maghrib' ? 'text-white font-bold' : 'text-white/60'}>Maghrib {prayerPreview.maghrib}</span>
-                        <span className="text-white/30">|</span>
-                        <span className={prayerPreview.nextPrayer === 'isha' ? 'text-white font-bold' : 'text-white/60'}>Isha {prayerPreview.isha}</span>
-                        <span className="text-emerald-300 font-semibold">• 🕌 {prayerPreview.nextPrayerNameId} in {prayerPreview.countdownText}</span>
-                      </div>
+                      prayerPosition === 'above_dock' && (
+                        <div className="self-center mb-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-[9px] font-medium text-white shadow-md">
+                          <span className={prayerPreview.nextPrayer === 'fajr' ? 'text-white font-bold' : 'text-white/60'}>Fajr {prayerPreview.fajr}</span>
+                          <span className="text-white/30">|</span>
+                          <span className={prayerPreview.nextPrayer === 'dhuhr' ? 'text-white font-bold' : 'text-white/60'}>Dhuhr {prayerPreview.dhuhr}</span>
+                          <span className="text-white/30">|</span>
+                          <span className={prayerPreview.nextPrayer === 'asr' ? 'text-white font-bold' : 'text-white/60'}>Asr {prayerPreview.asr}</span>
+                          <span className="text-white/30">|</span>
+                          <span className={prayerPreview.nextPrayer === 'maghrib' ? 'text-white font-bold' : 'text-white/60'}>Maghrib {prayerPreview.maghrib}</span>
+                          <span className="text-white/30">|</span>
+                          <span className={prayerPreview.nextPrayer === 'isha' ? 'text-white font-bold' : 'text-white/60'}>Isha {prayerPreview.isha}</span>
+                          <span className="text-emerald-300 font-semibold">• 🕌 {prayerPreview.nextPrayerNameId} in {prayerPreview.countdownText}</span>
+                        </div>
+                      )
                     ) : (
                       prayerPosition === 'above_dock' && (
                         <div className="self-center mb-2 inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-[10px] font-semibold text-white shadow-md">
@@ -1329,24 +1348,96 @@ export default function App() {
               </div>
             </div>
 
-            {/* 2. Placement Selector (When in compact mode) */}
-            {prayerMode === 'compact' && (
-              <div className="apple-card rounded-3xl p-6 md:p-8 space-y-5">
-                <div className="flex items-center justify-between pb-3 border-b border-[#e5e5ea]">
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2 rounded-xl bg-[#0071e3]/10 text-[#0071e3] border border-[#0071e3]/20">
-                      <PanelTop className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-[#1d1d1f]">Screen Position</h3>
-                      <p className="text-[11px] text-[#6e6e73]">Select where the compact capsule appears on the TV</p>
+            {/* 2. Screen Position Selector */}
+            <div className="apple-card rounded-3xl p-6 md:p-8 space-y-5">
+              <div className="flex items-center justify-between pb-3 border-b border-[#e5e5ea]">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-[#0071e3]/10 text-[#0071e3] border border-[#0071e3]/20">
+                    <PanelTop className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-[#1d1d1f]">Screen Position</h3>
+                    <p className="text-[11px] text-[#6e6e73]">
+                      {prayerMode === 'full'
+                        ? 'Select whether the 5-prayer strip appears below the status bar or above the dock'
+                        : 'Select where the compact capsule appears on the TV'}
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xs font-mono text-[#0071e3] font-bold">
+                  {prayerPosition === 'above_dock'
+                    ? 'Above Dock'
+                    : prayerPosition === 'header_right'
+                    ? 'Header Right'
+                    : prayerMode === 'full'
+                    ? 'Below Status Bar'
+                    : 'Header Left'}
+                </span>
+              </div>
+
+              {prayerMode === 'full' ? (
+                /* Full Mode: 2 Position Options (Below Status Bar vs Above Dock) */
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Option 1: Below Status Bar */}
+                  <div
+                    onClick={() => setPrayerPosition('header_left')}
+                    className={`p-5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between ${
+                      prayerPosition !== 'above_dock'
+                        ? 'border-emerald-500 bg-emerald-500/5 shadow-md ring-2 ring-emerald-500/20'
+                        : 'border-[#e5e5ea] bg-[#fbfbfd] hover:bg-[#f5f5f7]'
+                    }`}
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className={`p-2 rounded-xl ${prayerPosition !== 'above_dock' ? 'bg-emerald-500 text-white' : 'bg-[#eaeaed] text-[#6e6e73]'}`}>
+                          <PanelTop className="w-4 h-4" />
+                        </div>
+                        {prayerPosition !== 'above_dock' && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white">
+                            Selected
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <div className="font-bold text-sm text-[#1d1d1f]">Below Status Bar (Top Header)</div>
+                        <div className="text-[11px] text-[#6e6e73] mt-1 leading-relaxed">
+                          Cleanly centered horizontally directly underneath the clock and top buttons.
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <span className="text-xs font-mono text-[#0071e3] font-bold">
-                    {prayerPosition === 'header_left' ? 'Header Left' : prayerPosition === 'header_right' ? 'Header Right' : 'Above Dock'}
-                  </span>
-                </div>
 
+                  {/* Option 2: Above Dock */}
+                  <div
+                    onClick={() => setPrayerPosition('above_dock')}
+                    className={`p-5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between ${
+                      prayerPosition === 'above_dock'
+                        ? 'border-emerald-500 bg-emerald-500/5 shadow-md ring-2 ring-emerald-500/20'
+                        : 'border-[#e5e5ea] bg-[#fbfbfd] hover:bg-[#f5f5f7]'
+                    }`}
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className={`p-2 rounded-xl ${prayerPosition === 'above_dock' ? 'bg-emerald-500 text-white' : 'bg-[#eaeaed] text-[#6e6e73]'}`}>
+                          <AlignCenter className="w-4 h-4" />
+                        </div>
+                        {prayerPosition === 'above_dock' && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white">
+                            Selected
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <div className="font-bold text-sm text-[#1d1d1f]">Above Dock (Sticky Floating)</div>
+                        <div className="text-[11px] text-[#6e6e73] mt-1 leading-relaxed">
+                          Hovering directly above the dock row. Follows the dock on scroll and pins to top bar.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* Compact Mode: 3 Position Options */
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {/* Option A: header_left */}
                   <div
@@ -1429,14 +1520,14 @@ export default function App() {
                       <div>
                         <div className="font-bold text-sm text-[#1d1d1f]">Center (Above Dock)</div>
                         <div className="text-[11px] text-[#6e6e73] mt-1 leading-relaxed">
-                          Floating capsule centered above app dock.
+                          Floating capsule hovering above app dock with sticky scroll.
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
             {/* 3. Prayer Configuration */}
             <div className="apple-card rounded-3xl p-6 md:p-8 space-y-6">
