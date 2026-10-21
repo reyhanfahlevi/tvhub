@@ -306,7 +306,7 @@ export default function App() {
         method: 'DELETE',
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      showToast(`Wallpaper '${filename}' dihapus`);
+      showToast(`Wallpaper '${filename}' deleted`);
       // Reload wallpapers
       const wpRes = await fetch(`/api/devices/${target}/wallpapers`);
       if (wpRes.ok) {
@@ -320,7 +320,7 @@ export default function App() {
         }
       }
     } catch (err: any) {
-      showToast(`Gagal hapus wallpaper: ${err.message}`);
+      showToast(`Failed to delete wallpaper: ${err.message}`);
     }
   };
 
@@ -337,9 +337,9 @@ export default function App() {
       if (res.ok) {
         setActiveTvWallpaper(data.active_wallpaper || filename);
         setActiveSimWallpaper(filename === 'auto' ? null : filename);
-        showToast(filename === 'auto' ? 'Mode rotasi otomatis aktif di TV' : `Wallpaper '${filename}' aktif di TV!`);
+        showToast(filename === 'auto' ? 'Auto-rotation mode active on TV' : `Wallpaper '${filename}' set active on TV!`);
       } else {
-        showToast(`Gagal set wallpaper: ${data.error || res.statusText}`);
+        showToast(`Failed to set wallpaper: ${data.error || res.statusText}`);
       }
     } catch (err: any) {
       showToast(`Error: ${err.message}`);
@@ -357,10 +357,10 @@ export default function App() {
       if (res.ok) {
         showToast(`Remote: ${key.toUpperCase()}`);
       } else {
-        showToast(`Gagal kirim ${key}: ${res.statusText}`);
+        showToast(`Failed to send ${key}: ${res.statusText}`);
       }
     } catch (err: any) {
-      showToast(`Error koneksi: ${err.message}`);
+      showToast(`Connection error: ${err.message}`);
     }
   };
 
@@ -418,9 +418,9 @@ export default function App() {
       if (res.ok && data.location) {
         setPrayerCity('auto');
         setPrayerPreview(data.data);
-        showToast(`Lokasi terdeteksi: ${data.location.name}`);
+        showToast(`Location detected: ${data.location.name}`);
       } else {
-        showToast('Gagal mendeteksi lokasi');
+        showToast('Failed to detect location');
       }
     } catch (err: any) {
       showToast(`Error: ${err.message}`);
@@ -431,7 +431,7 @@ export default function App() {
 
   const handleBrowserGps = () => {
     if (!navigator.geolocation) {
-      showToast('Browser tidak mendukung Geolocation GPS');
+      showToast('Browser does not support GPS Geolocation');
       return;
     }
     setPrayerLoading(true);
@@ -448,7 +448,7 @@ export default function App() {
             body: JSON.stringify({
               enabled: prayerEnabled,
               coords: {
-                name: 'Lokasi GPS (Akurat)',
+                name: 'Browser GPS Location',
                 latitude: lat,
                 longitude: lon,
                 timezone: 'Asia/Jakarta'
@@ -458,17 +458,17 @@ export default function App() {
           const data = await res.json();
           if (res.ok && data.data) {
             setPrayerPreview(data.data);
-            showToast(`Widget sholat diperbarui dari GPS (${lat.toFixed(2)}, ${lon.toFixed(2)})!`);
+            showToast(`Prayer times updated via GPS (${lat.toFixed(2)}, ${lon.toFixed(2)})!`);
           }
         } catch (err: any) {
-          showToast(`Error GPS: ${err.message}`);
+          showToast(`GPS Error: ${err.message}`);
         } finally {
           setPrayerLoading(false);
         }
       },
       (err) => {
         setPrayerLoading(false);
-        showToast(`GPS izin ditolak: ${err.message}`);
+        showToast(`GPS permission denied: ${err.message}`);
       },
       { timeout: 10000 }
     );
@@ -504,7 +504,7 @@ export default function App() {
               <span className="text-base font-bold tracking-tight text-[#1d1d1f]">tvhub</span>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#f0f0f2] border border-[#e5e5ea] text-[#6e6e73]">CleanYourTV</span>
             </div>
-            <div className="text-[11px] text-[#6e6e73]">Pusat kendali ringan untuk Android TV</div>
+            <div className="text-[11px] text-[#6e6e73]">Fast &amp; lightweight control panel for Android TV</div>
           </div>
         </div>
 
@@ -798,8 +798,8 @@ export default function App() {
                     <Sliders className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-[#1d1d1f]">Pengaturan Tampilan & Dock</h3>
-                    <p className="text-[11px] text-[#6e6e73]">Atur transparansi dock, jumlah ikon & dimming di TV</p>
+                    <h3 className="text-sm font-bold text-[#1d1d1f]">Dock &amp; Display Settings</h3>
+                    <p className="text-[11px] text-[#6e6e73]">Calibrate dock opacity, icon slots, and wallpaper dimming</p>
                   </div>
                 </div>
                 <span className="text-xs font-mono px-2.5 py-1 rounded-full bg-[#f0f0f2] text-[#1d1d1f] border border-[#e5e5ea]">
@@ -824,9 +824,9 @@ export default function App() {
                   className="w-full h-2 bg-[#e5e5ea] rounded-lg appearance-none cursor-pointer accent-[#0071e3]"
                 />
                 <div className="flex justify-between text-[11px] text-[#86868b]">
-                  <span>0% (Bening Transparan)</span>
+                  <span>0% (Transparent)</span>
                   <span className="text-[#0071e3] font-semibold">50% (Glass Blur)</span>
-                  <span>100% (Solid Pekat)</span>
+                  <span>100% (Solid)</span>
                 </div>
               </div>
 
@@ -847,7 +847,7 @@ export default function App() {
                   className="w-full h-2 bg-[#e5e5ea] rounded-lg appearance-none cursor-pointer accent-[#6e6e73]"
                 />
                 <div className="flex justify-between text-[11px] text-[#86868b]">
-                  <span>0% (Terang Asli)</span>
+                  <span>0% (Original)</span>
                   <span>30% (Standard)</span>
                   <span>60% (Deep Contrast)</span>
                 </div>
@@ -856,9 +856,9 @@ export default function App() {
               {/* Dock Columns / Slots Selector */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs font-semibold">
-                  <span className="text-[#1d1d1f]">Jumlah Ikon di Dock (Slots)</span>
+                  <span className="text-[#1d1d1f]">Dock Icon Slots</span>
                   <span className="text-[#0071e3] font-mono text-sm px-2.5 py-0.5 rounded-lg bg-[#0071e3]/10 border border-[#0071e3]/20 font-bold">
-                    {config.columns ?? 4} Ikon
+                    {config.columns ?? 4} Icons
                   </span>
                 </div>
                 <div className="grid grid-cols-4 gap-2">
@@ -873,11 +873,11 @@ export default function App() {
                           : 'bg-[#f5f5f7] hover:bg-[#eaeaed] text-[#1d1d1f] border-[#e5e5ea]'
                       }`}
                     >
-                      {num} Ikon
+                      {num} Icons
                     </button>
                   ))}
                 </div>
-                <div className="text-[11px] text-[#86868b]">Kunci jumlah slot ikon dock agar tidak pernah berubah/reset.</div>
+                <div className="text-[11px] text-[#86868b]">Lock dock icon slots so layout never changes or resets.</div>
               </div>
 
               {/* Visual Toggles Grid */}
@@ -913,7 +913,7 @@ export default function App() {
                 >
                   <div>
                     <div className="font-bold text-xs text-[#1d1d1f]">Ambient App Glow</div>
-                    <div className="text-[11px] text-[#6e6e73] mt-0.5">Pendaran warna icon di dock</div>
+                    <div className="text-[11px] text-[#6e6e73] mt-0.5">Subtle ambient color glow behind icons</div>
                   </div>
                   <div className={`w-6 h-6 rounded-full border flex items-center justify-center transition-all ${
                     config.ambient_glow ? 'bg-[#0071e3] border-[#0071e3] text-white' : 'border-[#d2d2d7] bg-white'
@@ -933,7 +933,7 @@ export default function App() {
                 >
                   <div>
                     <div className="font-bold text-xs text-[#1d1d1f]">Hardware Stats HUD</div>
-                    <div className="text-[11px] text-[#6e6e73] mt-0.5">Tampilkan CPU & RAM di TV</div>
+                    <div className="text-[11px] text-[#6e6e73] mt-0.5">Show CPU & RAM usage on TV</div>
                   </div>
                   <div className={`w-6 h-6 rounded-full border flex items-center justify-center transition-all ${
                     config.show_stats ? 'bg-[#0071e3] border-[#0071e3] text-white' : 'border-[#d2d2d7] bg-white'
@@ -946,7 +946,7 @@ export default function App() {
                 <div className="p-4 rounded-2xl border bg-[#f5f5f7] border-[#e5e5ea] flex items-center justify-between">
                   <div>
                     <div className="font-bold text-xs text-[#1d1d1f]">Wallpaper Rotation</div>
-                    <div className="text-[11px] text-[#6e6e73] mt-0.5">Rotasi otomatis (menit)</div>
+                    <div className="text-[11px] text-[#6e6e73] mt-0.5">Auto-rotation interval (minutes)</div>
                   </div>
                   <input
                     type="number"
@@ -962,11 +962,11 @@ export default function App() {
               {/* Custom Greeting Name */}
               <div>
                 <label className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
-                  Custom Greeting Name (Tampil di Kiri Atas Layar TV)
+                  Custom Greeting Name (Top-left of TV screen)
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Reyhan (tampil: GOOD AFTERNOON, REYHAN)"
+                  placeholder="e.g. Living Room (displays: GOOD AFTERNOON, LIVING ROOM)"
                   value={config.greeting_name || ''}
                   onChange={(e) => setConfig({ ...config, greeting_name: e.target.value })}
                   className="w-full px-4 py-3 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-xs font-medium text-[#1d1d1f] placeholder-[#86868b] focus:outline-none focus:border-[#0071e3] transition"
@@ -979,7 +979,7 @@ export default function App() {
                 className="w-full py-3.5 rounded-2xl bg-[#0071e3] hover:bg-[#0077ed] active:scale-[0.99] text-white font-bold text-xs tracking-wide shadow-md transition-all flex items-center justify-center gap-2"
               >
                 <Check className="w-4 h-4 stroke-[3]" />
-                <span>Terapkan Perubahan Langsung ke TV</span>
+                <span>Apply Changes Live to TV</span>
               </button>
             </div>
 
@@ -992,10 +992,10 @@ export default function App() {
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-[#1d1d1f]">Wallpaper Collection</h3>
-                    <p className="text-[11px] text-[#6e6e73]">Upload wallpaper 4K over-the-air ke TV</p>
+                    <p className="text-[11px] text-[#6e6e73]">Upload wallpapers over-the-air to TV</p>
                   </div>
                 </div>
-                <span className="text-xs font-mono text-[#6e6e73]">{wallpapers.length} file di TV</span>
+                <span className="text-xs font-mono text-[#6e6e73]">{wallpapers.length} on TV</span>
               </div>
 
               <label className="border-2 border-dashed border-[#d2d2d7] hover:border-[#0071e3] bg-[#fbfbfd] hover:bg-[#f0f4ff] rounded-2xl p-7 flex flex-col items-center justify-center cursor-pointer transition-all group">
@@ -1010,18 +1010,18 @@ export default function App() {
                   <Upload className="w-5 h-5" />
                 </div>
                 <span className="text-xs font-bold text-[#1d1d1f]">
-                  {uploading ? 'Sedang mengirim wallpaper ke TV...' : 'Upload Wallpaper Baru ke TV'}
+                  {uploading ? 'Uploading wallpaper to TV...' : 'Upload New Wallpaper to TV'}
                 </span>
-                <span className="text-[11px] text-[#6e6e73] mt-1">Format JPG, PNG, WEBP (Otomatis rotasi)</span>
+                <span className="text-[11px] text-[#6e6e73] mt-1">Formats: JPG, PNG, WEBP (Supports auto-rotation)</span>
               </label>
 
               {/* Active TV Wallpaper State Banner */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${activeTvWallpaper === 'auto' ? 'bg-indigo-500 animate-pulse' : 'bg-emerald-500'}`} />
-                  <span className="text-xs font-semibold text-[#1d1d1f] shrink-0">Status di TV:</span>
+                  <span className="text-xs font-semibold text-[#1d1d1f] shrink-0">Active on TV:</span>
                   <span className="text-xs font-mono font-bold text-[#0071e3] px-2.5 py-0.5 rounded-lg bg-[#0071e3]/10 truncate" title={activeTvWallpaper}>
-                    {activeTvWallpaper === 'auto' ? '🔄 Rotasi Otomatis' : `🖼️ ${activeTvWallpaper}`}
+                    {activeTvWallpaper === 'auto' ? '🔄 Auto-Rotation' : `🖼️ ${activeTvWallpaper}`}
                   </span>
                 </div>
                 {activeTvWallpaper !== 'auto' && (
@@ -1030,7 +1030,7 @@ export default function App() {
                     onClick={() => handleSetActiveWallpaper('auto')}
                     className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white hover:bg-[#eaeaed] text-[#1d1d1f] border border-[#e5e5ea] transition shadow-xs flex items-center justify-center gap-1.5 shrink-0"
                   >
-                    <span>🔄 Mode Rotasi Otomatis</span>
+                    <span>🔄 Auto-Rotation Mode</span>
                   </button>
                 )}
               </div>
@@ -1057,7 +1057,7 @@ export default function App() {
                             setActiveSimWallpaper(filename);
                             setPreviewModalImg({ name: filename, url: fileUrl });
                           }}
-                          title="Klik untuk lihat ukuran penuh & simulasi"
+                          title="Click to preview full size & simulate"
                         >
                           <img
                             src={fileUrl}
@@ -1068,13 +1068,13 @@ export default function App() {
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition flex items-center justify-center opacity-0 group-hover:opacity-100">
                             <span className="p-2 rounded-xl bg-white/95 backdrop-blur-md text-[#1d1d1f] shadow-lg flex items-center gap-1.5 text-xs font-semibold">
                               <Eye className="w-3.5 h-3.5 text-[#0071e3]" />
-                              <span>Lihat</span>
+                              <span>View</span>
                             </span>
                           </div>
                           {isTvActive && (
                             <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-emerald-500 text-[10px] font-bold text-white shadow flex items-center gap-1">
                               <Check className="w-3 h-3 stroke-[3]" />
-                              <span>Aktif di TV</span>
+                              <span>Active on TV</span>
                             </span>
                           )}
                           {sizeKb && (
@@ -1092,23 +1092,23 @@ export default function App() {
                           <div className="flex items-center gap-1.5 shrink-0">
                             {isTvActive ? (
                               <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200">
-                                Sedang Dipakai
+                                In Use
                               </span>
                             ) : (
                               <button
                                 type="button"
                                 onClick={() => handleSetActiveWallpaper(filename)}
                                 className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-[#0071e3] hover:bg-[#0077ed] text-white transition shadow-xs"
-                                title="Pasang sebagai wallpaper aktif di TV sekarang"
+                                title="Set as active wallpaper on TV now"
                               >
-                                Pasang di TV
+                                Set Active
                               </button>
                             )}
                             <button
                               type="button"
                               onClick={() => handleDeleteWallpaper(filename)}
                               className="p-1 rounded-lg text-[#86868b] hover:text-red-600 hover:bg-red-50 transition"
-                              title="Hapus Wallpaper dari TV"
+                              title="Delete wallpaper from TV"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -1129,7 +1129,7 @@ export default function App() {
               <div className="w-full flex items-center justify-between pb-4 border-b border-[#e5e5ea] mb-6">
                 <div>
                   <h3 className="text-sm font-bold text-[#1d1d1f]">TV Remote Controller</h3>
-                  <p className="text-[11px] text-[#6e6e73]">Navigasi D-Pad & shortcut langsung ke TV</p>
+                  <p className="text-[11px] text-[#6e6e73]">D-Pad navigation & instant TV shortcuts</p>
                 </div>
                 <span className="text-xs font-mono px-2.5 py-1 rounded-full bg-[#f0f0f2] text-[#1d1d1f] border border-[#e5e5ea] font-medium">
                   {selectedId === 'all' ? 'Broadcast All' : activeDevice?.model}
@@ -1612,11 +1612,11 @@ export default function App() {
                     <h4 className="text-xs font-bold text-[#1d1d1f]">Weather Widget</h4>
                   </div>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-semibold">
-                    Segera Hadir
+                    Coming Soon
                   </span>
                 </div>
                 <p className="text-[11px] text-[#6e6e73] leading-relaxed">
-                  Widget cuaca realtime, suhu harian, dan indeks kualitas udara (AQI) kota Anda langsung di header layar TV.
+                  Real-time weather, temperature, and Air Quality Index (AQI) displayed directly on your TV header.
                 </p>
               </div>
 
@@ -1627,14 +1627,14 @@ export default function App() {
                     <div className="p-2 rounded-xl bg-[#0071e3]/10 text-[#0071e3] border border-[#0071e3]/20">
                       <Layers className="w-4 h-4" />
                     </div>
-                    <h4 className="text-xs font-bold text-[#1d1d1f]">Dukungan Custom Module Card (Spec 1)</h4>
+                    <h4 className="text-xs font-bold text-[#1d1d1f]">Custom Module Card Support (Spec 1)</h4>
                   </div>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-semibold">
                     Native APK
                   </span>
                 </div>
                 <p className="text-[11px] text-[#6e6e73] leading-relaxed">
-                  Aplikasi pihak ketiga di Android TV dapat memasang card interaktif native di dock launcher CleanYourTV via category{' '}
+                  Third-party Android TV applications can embed native interactive cards into the CleanYourTV dock via category{' '}
                   <code className="text-[10px] font-mono text-[#0071e3] bg-[#0071e3]/10 px-1 py-0.5 rounded">com.gathin.tvhome.category.DOCK_CARD</code>.
                 </p>
               </div>
