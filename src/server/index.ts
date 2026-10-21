@@ -154,6 +154,38 @@ app.post('/api/devices/:id/key', async (req, res) => {
   }
 });
 
+// List wallpapers on a specific TV
+app.get('/api/devices/:id/wallpapers', async (req, res) => {
+  const ip = getTargetIp(req.params.id);
+  try {
+    const response = await fetch(`http://${ip}:8080/api/wallpapers`, {
+      signal: AbortSignal.timeout(3000),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    res.json(data);
+  } catch (err: any) {
+    res.status(502).json({ error: `Failed to get wallpapers from ${ip}: ${err.message}` });
+  }
+});
+
+// Delete wallpaper on a specific TV
+app.delete('/api/devices/:id/wallpapers/:name', async (req, res) => {
+  const ip = getTargetIp(req.params.id);
+  const name = encodeURIComponent(req.params.name);
+  try {
+    const response = await fetch(`http://${ip}:8080/api/wallpaper?name=${name}`, {
+      method: 'DELETE',
+      signal: AbortSignal.timeout(3000),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    res.json(data);
+  } catch (err: any) {
+    res.status(502).json({ error: `Failed to delete wallpaper on ${ip}: ${err.message}` });
+  }
+});
+
 // Upload wallpaper to a specific TV
 app.post('/api/devices/:id/wallpaper', upload.single('wallpaper'), async (req, res) => {
   const ip = getTargetIp(req.params.id);

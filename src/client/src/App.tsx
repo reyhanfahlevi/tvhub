@@ -17,8 +17,14 @@ import {
   Clock,
   Sliders,
   Image as ImageIcon,
-  CheckCircle2
+  CheckCircle2,
+  Trash2
 } from 'lucide-react';
+
+interface WallpaperItem {
+  name: string;
+  size_bytes?: number;
+}
 
 interface TVDevice {
   id: string;
@@ -74,7 +80,7 @@ export default function App() {
     show_stats: true,
   });
   const [apps, setApps] = useState<any[]>([]);
-  const [wallpapers, setWallpapers] = useState<string[]>([]);
+  const [wallpapers, setWallpapers] = useState<WallpaperItem[]>([]);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [uploading, setUploading] = useState<boolean>(false);
 
@@ -131,7 +137,10 @@ export default function App() {
         }
         if (wpRes.ok) {
           const wpData = await wpRes.json();
-          setWallpapers(wpData.wallpapers || []);
+          const list = (wpData.wallpapers || []).map((w: any) => 
+            typeof w === 'string' ? { name: w } : w
+          );
+          setWallpapers(list);
         }
       } catch (err) {
         console.error('Failed to load device details', err);
@@ -212,12 +221,47 @@ export default function App() {
         });
         showToast(`Wallpaper uploaded to TV`);
       }
+      // Reload wallpapers list
+      const checkTarget = target === 'all' ? (devices[0]?.id || '') : target;
+      if (checkTarget) {
+        const wpRes = await fetch(`/api/devices/${checkTarget}/wallpapers`);
+        if (wpRes.ok) {
+          const wpData = await wpRes.json();
+          const list = (wpData.wallpapers || []).map((w: any) => 
+            typeof w === 'string' ? { name: w } : w
+          );
+          setWallpapers(list);
+        }
+      }
       fetchDevices();
     } catch (err: any) {
       showToast(`Upload failed: ${err.message}`);
     } finally {
       setUploading(false);
       e.target.value = '';
+    }
+  };
+
+  const handleDeleteWallpaper = async (filename: string) => {
+    const target = selectedId === 'all' ? (devices[0]?.id || '') : selectedId;
+    if (!target) return;
+    try {
+      const res = await fetch(`/api/devices/${target}/wallpapers/${encodeURIComponent(filename)}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      showToast(`Wallpaper '${filename}' dihapus`);
+      // Reload wallpapers
+      const wpRes = await fetch(`/api/devices/${target}/wallpapers`);
+      if (wpRes.ok) {
+        const wpData = await wpRes.json();
+        const list = (wpData.wallpapers || []).map((w: any) => 
+          typeof w === 'string' ? { name: w } : w
+        );
+        setWallpapers(list);
+      }
+    } catch (err: any) {
+      showToast(`Gagal hapus wallpaper: ${err.message}`);
     }
   };
 
@@ -694,15 +738,34 @@ export default function App() {
               </label>
 
               {wallpapers.length > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
-                  {wallpapers.map((name, idx) => (
-                    <div
-                      key={idx}
-                      className="p-2.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[11px] font-mono text-[#1d1d1f] flex items-center justify-between truncate"
-                    >
-                      <span className="truncate">{name}</span>
-                    </div>
-                  ))}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 pt-1">
+                  {wallpapers.map((wp: any, idx: number) => {
+                    const filename = typeof wp === 'string' ? wp : wp.name;
+                    const sizeKb = wp.size_bytes ? Math.round(wp.size_bytes / 1024) : null;
+                    return (
+                      <div
+                        key={idx}
+                        className="p-3 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-between gap-2 group hover:border-[#d2d2d7] transition"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="p-2 rounded-xl bg-white border border-[#e5e5ea] text-[#6e6e73] shrink-0">
+                            <ImageIcon className="w-4 h-4 text-pink-500" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-xs font-mono text-[#1d1d1f] truncate font-medium">{filename}</div>
+                            {sizeKb && <div className="text-[10px] text-[#86868b] font-mono">{sizeKb} KB</div>}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteWallpaper(filename)}
+                          className="p-1.5 rounded-lg text-[#86868b] hover:text-red-600 hover:bg-red-50 transition shrink-0 opacity-70 group-hover:opacity-100"
+                          title="Hapus Wallpaper dari TV"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
