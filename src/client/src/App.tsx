@@ -144,14 +144,19 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch prayer preview whenever prayerCity changes
+  // Fetch prayer preview whenever prayerCity changes or periodically every 15s
   useEffect(() => {
-    fetch(`/api/widgets/prayer?city=${prayerCity}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.data) setPrayerPreview(data.data);
-      })
-      .catch(() => {});
+    const updatePreview = () => {
+      fetch(`/api/widgets/prayer?city=${prayerCity}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.data) setPrayerPreview(data.data);
+        })
+        .catch(() => {});
+    };
+    updatePreview();
+    const interval = setInterval(updatePreview, 15000);
+    return () => clearInterval(interval);
   }, [prayerCity]);
 
   // Fetch config, apps, wallpapers for selected device
