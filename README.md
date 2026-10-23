@@ -210,7 +210,7 @@ You should see:
 
 ### Phase 3: Access & Manage your TVs!
 
-1. Open your web browser and visit:
+1. Open your web browser and visit (tvhub operates on **default port `3000`**):
    - **Local machine**: `http://localhost:3000`
    - **Mobile phone / Tablet**: `http://<HOST_MACHINE_IP>:3000` *(make sure your phone is connected to the same Wi-Fi)*
 2. **Auto-Discovery**: `tvhub` will automatically scan the local network and discover all active TVs running CleanYourTV.
@@ -232,17 +232,36 @@ npx vite src/client
 
 ---
 
-## ⚙️ Configuration & Environment Variables
+## 🔌 Network Ports & Configuration
 
-| Variable | Default | Description |
-|---|---|---|
-| `PORT` | `3000` | Port for the tvhub web dashboard and proxy server |
+### Default Ports Used by tvhub Ecosystem
 
-To run on a different port:
+| Port | Protocol | Device / Service | Description | Configurable? |
+|---|---|---|---|---|
+| **`3000`** | `HTTP / TCP` | Host Computer / Server | **tvhub Web Dashboard UI & Proxy Server** | ✅ Yes (via `PORT` env) |
+| **`8080`** | `HTTP / TCP` | Android TV(s) | **Embedded CleanYourTV REST API** | Pre-configured in launcher |
+| **`5353`** | `UDP` | Local Network (LAN) | **mDNS Multicast** (zero-config automatic TV discovery) | Standard protocol |
+| **`5555`** | `TCP` | Android TV | **ADB Network Debugging** (initial 1-time setup only) | Android standard |
+
+> [!NOTE]
+> Make sure port **`3000`** is not blocked by your host computer's firewall if you want to access the dashboard from your smartphone or tablet on the local Wi-Fi.
+
+### Changing the Default Port (`3000`)
+
+If port `3000` is already used by another application, you can specify a custom port using the `PORT` environment variable:
+
 ```bash
-PORT=8080 npm start
-# or on Windows PowerShell:
-$env:PORT="8080"; npm start
+# When using npx:
+PORT=4000 npx @reyhanfahlevi/tvhub
+
+# When using global CLI:
+PORT=4000 tvhub
+
+# When running from source:
+PORT=4000 npm start
+
+# On Windows PowerShell:
+$env:PORT="4000"; tvhub
 ```
 
 ---
