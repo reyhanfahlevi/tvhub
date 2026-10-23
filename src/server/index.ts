@@ -3,8 +3,13 @@ import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
+import { fileURLToPath } from 'url';
 import { DeviceDiscovery } from './discovery.js';
 import { calculatePrayerTimes, INDONESIAN_CITIES, detectLocationFromIP } from './prayer.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -20,7 +25,7 @@ app.get(['/download/cleanyourtv.apk', '/apk'], (_req, res) => {
   if (fs.existsSync(APK_PATH)) {
     res.download(APK_PATH, 'cleanyourtv.apk');
   } else {
-    res.status(404).json({ error: 'APK build not found. Please compile the launcher first.' });
+    res.redirect('https://github.com/reyhanfahlevi/cleanyourtv/releases/latest/download/app-release.apk');
   }
 });
 
@@ -475,9 +480,28 @@ app.post('/api/broadcast/config', async (req, res) => {
   res.json({ results });
 });
 
-// Serve frontend static build if exists
-const clientDist = path.resolve(process.cwd(), 'dist/client');
-if (fs.existsSync(clientDist)) {
+// Helper to find local IPv4 address
+function getLocalIp(): string {
+  const nets = os.networkInterfaces();
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name] || []) {
+      if (net.family === 'IPv4' && !net.internal) {
+        return net.address;
+      }
+    }
+  }
+  return 'localhost';
+}
+
+// Serve frontend static build
+const possibleDistPaths = [
+  path.resolve(__dirname, '../client'),
+  path.resolve(__dirname, '../../dist/client'),
+  path.resolve(process.cwd(), 'dist/client')
+];
+const clientDist = possibleDistPaths.find(p => fs.existsSync(p));
+
+if (clientDist) {
   app.use(express.static(clientDist));
   app.get('*', (_req, res) => {
     res.sendFile(path.join(clientDist, 'index.html'));
@@ -485,8 +509,9 @@ if (fs.existsSync(clientDist)) {
 }
 
 app.listen(PORT, '0.0.0.0', () => {
+  const localIp = getLocalIp();
   console.log(`\n======================================================`);
   console.log(`🚀 tvhub server running at http://localhost:${PORT}`);
-  console.log(`🌐 Network: http://10.20.50.153:${PORT}`);
+  console.log(`🌐 Network: http://${localIp}:${PORT}`);
   console.log(`======================================================\n`);
 });

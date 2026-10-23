@@ -151,29 +151,50 @@ If you get a JSON response with memory, storage, and device model, **TV setup is
 
 ---
 
-### Phase 2: Install & Run `tvhub` Dashboard
+### Phase 2: Run `tvhub` Dashboard on your Computer / Server
 
-Now, set up the web dashboard on your computer or home server (e.g. PC, Mac, Linux server, or Raspberry Pi).
+You can run `tvhub` in two ways: **Instant (via npm/npx)** or **Manual (from Source)**.
 
-#### Step 2.1: Clone the Repository
+#### Option A: Quick Run with npm / npx (Recommended — No clone needed!)
+
+Run directly with `npx` (downloads and launches instantly):
 ```bash
+npx tvhub
+```
+
+Or install it globally to your system so you can launch it anytime by just typing `tvhub`:
+```bash
+# Install globally
+npm install -g tvhub
+
+# Launch dashboard
+tvhub
+```
+
+*(If installing directly from the GitHub repository via npm):*
+```bash
+npm install -g git+https://github.com/reyhanfahlevi/tvhub.git
+tvhub
+```
+
+---
+
+#### Option B: Run from Source (Clone Git)
+
+If you prefer cloning the repository or making custom modifications:
+
+```bash
+# 1. Clone repository
 git clone https://github.com/reyhanfahlevi/tvhub.git
 cd tvhub
-```
 
-#### Step 2.2: Install Dependencies
-```bash
+# 2. Install dependencies
 npm install
-```
 
-#### Step 2.3: Build the Application
-This compiles both the React 19 frontend and the TypeScript backend into production assets:
-```bash
+# 3. Build client & server
 npm run build
-```
 
-#### Step 2.4: Start the Dashboard
-```bash
+# 4. Start dashboard
 npm start
 ```
 
