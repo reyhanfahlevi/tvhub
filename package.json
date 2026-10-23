@@ -1,11 +1,11 @@
 {
-  "name": "tvhub",
+  "name": "@reyhanfahlevi/tvhub",
   "version": "1.0.0",
   "type": "module",
   "description": "Central management hub and dashboard for tvhome Android TVs",
   "main": "dist/server/index.js",
   "bin": {
-    "tvhub": "./bin/tvhub.js"
+    "tvhub": "bin/tvhub.js"
   },
   "files": [
     "dist",

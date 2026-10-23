@@ -159,13 +159,13 @@ You can run `tvhub` in two ways: **Instant (via npm/npx)** or **Manual (from Sou
 
 Run directly with `npx` (downloads and launches instantly):
 ```bash
-npx tvhub
+npx @reyhanfahlevi/tvhub
 ```
 
 Or install it globally to your system so you can launch it anytime by just typing `tvhub`:
 ```bash
 # Install globally
-npm install -g tvhub
+npm install -g @reyhanfahlevi/tvhub
 
 # Launch dashboard
 tvhub
