@@ -63,7 +63,7 @@ If you use an AI coding assistant with terminal/shell access (e.g. **Claude Code
 
 ---
 
-## 📋 Prerequisites (Persyaratan Sistem)
+## 📋 Prerequisites
 
 Before installing `tvhub`, ensure you have the following requirements ready:
 
