@@ -39,6 +39,31 @@ It completely eliminates the need for ADB cables or terminal commands after init
 
 ---
 
+## ⚡ 1-Prompt Setup via AI Assistant (Claude Code, Antigravity, Cursor)
+
+If you use an AI coding assistant with terminal/shell access (e.g. **Claude Code, Antigravity, Cursor, Codex, Gemini CLI**), you don't even need to type terminal commands manually!
+
+1. Enable **USB Debugging** on your TV (*Settings → Device Preferences → About → Tap "Build" 7 times → Developer Options → USB Debugging*).
+2. Copy the prompt below, replace `<TV_IP>` with your TV's local IP (e.g., `192.168.1.50`), and paste it into your AI assistant:
+
+> [!TIP]
+> 📋 **Copy & Paste into your AI Assistant** (see also **[`PROMPT.md`](./PROMPT.md)**):
+> ```text
+> I want to debloat and configure my Android TV, install CleanYourTV, and run tvhub.
+> TV IP: <TV_IP_HERE>
+> 
+> Please:
+> 1. Connect over ADB (`adb connect <TV_IP>:5555`). Remind me to accept the debugging prompt on my TV screen.
+> 2. Download and install CleanYourTV APK from:
+>    https://github.com/reyhanfahlevi/cleanyourtv/releases/latest/download/app-release.apk
+> 3. Set CleanYourTV as default launcher (`adb shell cmd package set-home-activity com.gathin.tvhome/.MainActivity`).
+> 4. Safely disable default ad-filled stock launcher using `pm disable-user --user 0`.
+> 5. Verify the embedded API is active (`curl http://<TV_IP>:8080/api/status`).
+> 6. Start the tvhub dashboard via `npx @reyhanfahlevi/tvhub`.
+> ```
+
+---
+
 ## 📋 Prerequisites (Persyaratan Sistem)
 
 Before installing `tvhub`, ensure you have the following requirements ready:
