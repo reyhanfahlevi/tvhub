@@ -41,19 +41,18 @@ It completely eliminates the need for ADB cables or terminal commands after init
 
 ## ⚡ 1-Prompt Setup via AI Assistant (Claude Code, Antigravity, Cursor)
 
-If you use an AI coding assistant with terminal/shell access (e.g. **Claude Code, Antigravity, Cursor, Codex, Gemini CLI**), you don't even need to type terminal commands manually!
+If you use an AI coding assistant with terminal/shell access (e.g. **Claude Code, Antigravity, Cursor, Codex, Gemini CLI**), you don't even need to type terminal commands or look up your TV's IP address manually!
 
 1. Enable **USB Debugging** on your TV (*Settings → Device Preferences → About → Tap "Build" 7 times → Developer Options → USB Debugging*).
-2. Copy the prompt below, replace `<TV_IP>` with your TV's local IP (e.g., `192.168.1.50`), and paste it into your AI assistant:
+2. Copy and paste the prompt below directly into your AI assistant:
 
 > [!TIP]
-> 📋 **Copy & Paste into your AI Assistant** (see also **[`PROMPT.md`](./PROMPT.md)**):
+> 📋 **Copy & Paste into your AI Assistant** (see full **[`PROMPT.md`](./PROMPT.md)**):
 > ```text
 > I want to debloat and configure my Android TV, install CleanYourTV, and run tvhub.
-> TV IP: <TV_IP_HERE>
 > 
 > Please:
-> 1. Connect over ADB (`adb connect <TV_IP>:5555`). Remind me to accept the debugging prompt on my TV screen.
+> 1. Automatically find my Android TV on the local network (check `adb mdns services`, scan local subnet for open port 5555, or check mDNS `_adb._tcp`), then connect via `adb connect <TV_IP>:5555`. Remind me to accept the debugging prompt on my TV screen.
 > 2. Download and install CleanYourTV APK from:
 >    https://github.com/reyhanfahlevi/cleanyourtv/releases/latest/download/app-release.apk
 > 3. Set CleanYourTV as default launcher (`adb shell cmd package set-home-activity com.gathin.tvhome/.MainActivity`).

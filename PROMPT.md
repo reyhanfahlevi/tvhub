@@ -1,19 +1,19 @@
 # 🤖 tvhub — Automated AI Agent Prompt
 
 > **Copy and paste everything below into your AI coding assistant** (Claude Code, Antigravity, Cursor, Gemini CLI, Codex, Aider) on a computer connected to the same Wi-Fi as your Android TV.
+> 
+> *You don't even need to look up your TV's IP address beforehand — the assistant will scan and discover it on your local network automatically!*
 
 ---
 
 ```text
 I want to debloat and configure my Android TV with CleanYourTV, and run the tvhub centralized management dashboard.
 
-My TV local IP is: <REPLACE_WITH_TV_IP> (e.g. 192.168.1.50)
-My TV brand/model is: <OPTIONAL_TV_MODEL> (e.g. Xiaomi Mi Box, TCL, Chromecast with Google TV)
-
 Please execute the setup step-by-step using your shell access:
 
-1. Connect via ADB:
-   - Run `adb connect <TV_IP>:5555` and `adb devices`.
+1. Discover & Connect via ADB:
+   - Automatically find my Android TV on the local network (check `adb mdns services`, scan the local Wi-Fi subnet for open port 5555, or check `_adb._tcp` mDNS services).
+   - If found, connect to it via `adb connect <TV_IP>:5555`. If multiple devices are detected or port 5555 is not found, ask me for my TV's IP address.
    - Tell me when the "Allow USB debugging?" dialog appears on the TV screen so I can click "Always allow" with my remote.
    - Detect device model: `adb -s <TV_IP>:5555 shell "getprop ro.product.manufacturer && getprop ro.product.model"`.
 
